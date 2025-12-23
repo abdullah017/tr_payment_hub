@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import 'package:tr_payment_hub/tr_payment_hub.dart';
 import 'package:tr_payment_hub/src/providers/iyzico/iyzico_auth.dart';
-import 'package:tr_payment_hub/src/providers/iyzico/iyzico_mapper.dart';
 import 'package:tr_payment_hub/src/providers/iyzico/iyzico_error_mapper.dart';
+import 'package:tr_payment_hub/src/providers/iyzico/iyzico_mapper.dart';
+import 'package:tr_payment_hub/tr_payment_hub.dart';
 
 void main() {
   group('IyzicoAuth', () {
@@ -16,7 +16,7 @@ void main() {
     });
 
     test('should generate authorization header', () {
-      final body = '{"test": "data"}';
+      const body = '{"test": "data"}';
       final header = auth.generateAuthorizationHeader('/payment/auth', body);
 
       expect(header, startsWith('IYZWSv2 '));
@@ -24,8 +24,14 @@ void main() {
     });
 
     test('should generate different headers for different bodies', () {
-      final header1 = auth.generateAuthorizationHeader('/payment/auth', '{"a": 1}');
-      final header2 = auth.generateAuthorizationHeader('/payment/auth', '{"b": 2}');
+      final header1 = auth.generateAuthorizationHeader(
+        '/payment/auth',
+        '{"a": 1}',
+      );
+      final header2 = auth.generateAuthorizationHeader(
+        '/payment/auth',
+        '{"b": 2}',
+      );
 
       // Random key nedeniyle her zaman farklı olacak
       expect(header1, isNot(equals(header2)));
@@ -67,7 +73,7 @@ void main() {
     test('should map installment request', () {
       final mapped = IyzicoMapper.toInstallmentRequest(
         binNumber: '552879',
-        price: 250.0,
+        price: 250,
         conversationId: 'conv456',
       );
 
@@ -270,11 +276,10 @@ void main() {
 
     setUp(() {
       provider = IyzicoProvider();
-      config = IyzicoConfig(
+      config = const IyzicoConfig(
         merchantId: 'test_merchant',
         apiKey: 'sandbox-test-api-key',
         secretKey: 'sandbox-test-secret-key',
-        isSandbox: true,
       );
     });
 
@@ -292,7 +297,7 @@ void main() {
     });
 
     test('should throw error with invalid config type', () async {
-      final invalidConfig = PayTRConfig(
+      const invalidConfig = PayTRConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
@@ -319,9 +324,9 @@ void main() {
     test('should require callbackUrl for 3DS payment', () async {
       await provider.initialize(config);
 
-      final request = PaymentRequest(
+      const request = PaymentRequest(
         orderId: 'ORDER_123',
-        amount: 100.0,
+        amount: 100,
         card: CardInfo(
           cardHolderName: 'Test',
           cardNumber: '5528790000000008',
@@ -345,11 +350,10 @@ void main() {
             id: 'I1',
             name: 'Product',
             category: 'Test',
-            price: 100.0,
+            price: 100,
             itemType: ItemType.physical,
           ),
         ],
-        callbackUrl: null, // No callback URL
       );
 
       expect(
@@ -361,18 +365,17 @@ void main() {
 
   group('IyzicoConfig', () {
     test('should return sandbox URL when isSandbox is true', () {
-      final config = IyzicoConfig(
+      const config = IyzicoConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
-        isSandbox: true,
       );
 
       expect(config.baseUrl, 'https://sandbox-api.iyzipay.com');
     });
 
     test('should return production URL when isSandbox is false', () {
-      final config = IyzicoConfig(
+      const config = IyzicoConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
@@ -383,13 +386,13 @@ void main() {
     });
 
     test('should validate config correctly', () {
-      final validConfig = IyzicoConfig(
+      const validConfig = IyzicoConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
       );
 
-      final invalidConfig = IyzicoConfig(
+      const invalidConfig = IyzicoConfig(
         merchantId: '',
         apiKey: 'test',
         secretKey: '',
@@ -401,38 +404,34 @@ void main() {
   });
 }
 
-PaymentRequest _createTestRequest() {
-  return PaymentRequest(
-    orderId: 'ORDER_123',
-    amount: 100.0,
-    currency: Currency.tryLira,
-    installment: 1,
-    card: CardInfo(
-      cardHolderName: 'John Doe',
-      cardNumber: '5528790000000008',
-      expireMonth: '12',
-      expireYear: '2030',
-      cvc: '123',
+PaymentRequest _createTestRequest() => const PaymentRequest(
+  orderId: 'ORDER_123',
+  amount: 100,
+  card: CardInfo(
+    cardHolderName: 'John Doe',
+    cardNumber: '5528790000000008',
+    expireMonth: '12',
+    expireYear: '2030',
+    cvc: '123',
+  ),
+  buyer: BuyerInfo(
+    id: 'BUYER_123',
+    name: 'John',
+    surname: 'Doe',
+    email: 'john@example.com',
+    phone: '+905551234567',
+    ip: '127.0.0.1',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address',
+  ),
+  basketItems: [
+    BasketItem(
+      id: 'ITEM_1',
+      name: 'Test Product',
+      category: 'Electronics',
+      price: 100,
+      itemType: ItemType.physical,
     ),
-    buyer: BuyerInfo(
-      id: 'BUYER_123',
-      name: 'John',
-      surname: 'Doe',
-      email: 'john@example.com',
-      phone: '+905551234567',
-      ip: '127.0.0.1',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address',
-    ),
-    basketItems: [
-      BasketItem(
-        id: 'ITEM_1',
-        name: 'Test Product',
-        category: 'Electronics',
-        price: 100.0,
-        itemType: ItemType.physical,
-      ),
-    ],
-  );
-}
+  ],
+);

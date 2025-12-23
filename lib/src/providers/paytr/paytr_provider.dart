@@ -1,20 +1,21 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
-import '../../core/enums.dart';
 import '../../core/config.dart';
-import '../../core/payment_provider.dart';
+import '../../core/enums.dart';
+import '../../core/exceptions/payment_exception.dart';
 import '../../core/models/basket_item.dart';
+import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
-import '../../core/models/installment_info.dart';
-import '../../core/models/three_ds_result.dart';
-import '../../core/exceptions/payment_exception.dart';
-import 'paytr_endpoints.dart';
-import 'paytr_auth.dart';
-import 'paytr_mapper.dart';
-import 'paytr_error_mapper.dart';
 import '../../core/models/refund_request.dart';
+import '../../core/models/three_ds_result.dart';
+import '../../core/payment_provider.dart';
+import 'paytr_auth.dart';
+import 'paytr_endpoints.dart';
+import 'paytr_error_mapper.dart';
+import 'paytr_mapper.dart';
 
 /// PayTR Payment Provider
 class PayTRProvider implements PaymentProvider {
@@ -117,7 +118,7 @@ class PayTRProvider implements PaymentProvider {
     }
   }
 
- @override
+  @override
   Future<ThreeDSInitResult> init3DSPayment(PaymentRequest request) async {
     _checkInitialized();
 
@@ -196,6 +197,7 @@ class PayTRProvider implements PaymentProvider {
       );
     }
   }
+
   @override
   Future<PaymentResult> complete3DSPayment(
     String transactionId, {
@@ -204,7 +206,7 @@ class PayTRProvider implements PaymentProvider {
     _checkInitialized();
 
     if (callbackData == null) {
-      throw PaymentException(
+      throw const PaymentException(
         code: 'missing_callback_data',
         message: 'PayTR requires callback data to complete 3DS payment',
         provider: ProviderType.paytr,
@@ -227,7 +229,7 @@ class PayTRProvider implements PaymentProvider {
       );
 
       if (!isValid) {
-        throw PaymentException(
+        throw const PaymentException(
           code: 'invalid_hash',
           message: 'Callback hash doğrulaması başarısız',
           provider: ProviderType.paytr,
@@ -339,13 +341,9 @@ class PayTRProvider implements PaymentProvider {
     }
   }
 
-  String _generateMerchantOid() {
-    return 'SP${DateTime.now().millisecondsSinceEpoch}';
-  }
+  String _generateMerchantOid() => 'SP${DateTime.now().millisecondsSinceEpoch}';
 
-  String _formatAmount(double amount) {
-    return (amount * 100).round().toString();
-  }
+  String _formatAmount(double amount) => (amount * 100).round().toString();
 
   String _mapCurrency(Currency currency) {
     switch (currency) {
@@ -361,48 +359,52 @@ class PayTRProvider implements PaymentProvider {
   }
 
   String _encodeBasket(List<BasketItem> items) {
-    final basketArray = items.map((item) {
-      return [item.name, (item.price * 100).round().toString(), item.quantity];
-    }).toList();
+    final basketArray = items
+        .map(
+          (item) => [
+            item.name,
+            (item.price * 100).round().toString(),
+            item.quantity,
+          ],
+        )
+        .toList();
 
     final jsonString = jsonEncode(basketArray);
     return base64.encode(utf8.encode(jsonString));
   }
 
-  List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) {
-    return [
-      InstallmentOption(
-        installmentNumber: 1,
-        installmentPrice: amount,
-        totalPrice: amount,
-      ),
-      InstallmentOption(
-        installmentNumber: 2,
-        installmentPrice: amount / 2 * 1.02,
-        totalPrice: amount * 1.02,
-      ),
-      InstallmentOption(
-        installmentNumber: 3,
-        installmentPrice: amount / 3 * 1.03,
-        totalPrice: amount * 1.03,
-      ),
-      InstallmentOption(
-        installmentNumber: 6,
-        installmentPrice: amount / 6 * 1.05,
-        totalPrice: amount * 1.05,
-      ),
-      InstallmentOption(
-        installmentNumber: 9,
-        installmentPrice: amount / 9 * 1.07,
-        totalPrice: amount * 1.07,
-      ),
-      InstallmentOption(
-        installmentNumber: 12,
-        installmentPrice: amount / 12 * 1.10,
-        totalPrice: amount * 1.10,
-      ),
-    ];
-  }
+  List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) => [
+    InstallmentOption(
+      installmentNumber: 1,
+      installmentPrice: amount,
+      totalPrice: amount,
+    ),
+    InstallmentOption(
+      installmentNumber: 2,
+      installmentPrice: amount / 2 * 1.02,
+      totalPrice: amount * 1.02,
+    ),
+    InstallmentOption(
+      installmentNumber: 3,
+      installmentPrice: amount / 3 * 1.03,
+      totalPrice: amount * 1.03,
+    ),
+    InstallmentOption(
+      installmentNumber: 6,
+      installmentPrice: amount / 6 * 1.05,
+      totalPrice: amount * 1.05,
+    ),
+    InstallmentOption(
+      installmentNumber: 9,
+      installmentPrice: amount / 9 * 1.07,
+      totalPrice: amount * 1.07,
+    ),
+    InstallmentOption(
+      installmentNumber: 12,
+      installmentPrice: amount / 12 * 1.10,
+      totalPrice: amount * 1.10,
+    ),
+  ];
 
   Future<Map<String, dynamic>> _postForm(
     String endpoint,

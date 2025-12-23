@@ -7,8 +7,8 @@ void main() {
     late IyzicoConfig config;
 
     setUp(() {
-      provider = MockPaymentProvider(shouldSucceed: true);
-      config = IyzicoConfig(
+      provider = MockPaymentProvider();
+      config = const IyzicoConfig(
         merchantId: 'test_merchant',
         apiKey: 'test_api_key',
         secretKey: 'test_secret_key',
@@ -25,7 +25,7 @@ void main() {
     });
 
     test('should fail with invalid config', () async {
-      final invalidConfig = IyzicoConfig(
+      const invalidConfig = IyzicoConfig(
         merchantId: '',
         apiKey: '',
         secretKey: '',
@@ -65,7 +65,7 @@ void main() {
 
       final installments = await provider.getInstallments(
         binNumber: '552879',
-        amount: 100.0,
+        amount: 100,
       );
 
       expect(installments.options.length, greaterThan(0));
@@ -76,7 +76,7 @@ void main() {
 
   group('CardInfo', () {
     test('should mask card number correctly', () {
-      final card = CardInfo(
+      const card = CardInfo(
         cardHolderName: 'Test',
         cardNumber: '5528790000000008',
         expireMonth: '12',
@@ -90,7 +90,7 @@ void main() {
     });
 
     test('should validate card number with Luhn algorithm', () {
-      final validCard = CardInfo(
+      const validCard = CardInfo(
         cardHolderName: 'Test',
         cardNumber: '5528790000000008',
         expireMonth: '12',
@@ -98,7 +98,7 @@ void main() {
         cvc: '123',
       );
 
-      final invalidCard = CardInfo(
+      const invalidCard = CardInfo(
         cardHolderName: 'Test',
         cardNumber: '1234567890123456',
         expireMonth: '12',
@@ -151,36 +151,34 @@ void main() {
   });
 }
 
-PaymentRequest _createTestRequest() {
-  return PaymentRequest(
-    orderId: 'TEST_ORDER',
-    amount: 100.0,
-    card: CardInfo(
-      cardHolderName: 'Test User',
-      cardNumber: '5528790000000008',
-      expireMonth: '12',
-      expireYear: '2030',
-      cvc: '123',
+PaymentRequest _createTestRequest() => const PaymentRequest(
+  orderId: 'TEST_ORDER',
+  amount: 100,
+  card: CardInfo(
+    cardHolderName: 'Test User',
+    cardNumber: '5528790000000008',
+    expireMonth: '12',
+    expireYear: '2030',
+    cvc: '123',
+  ),
+  buyer: BuyerInfo(
+    id: 'BUYER_1',
+    name: 'Test',
+    surname: 'User',
+    email: 'test@example.com',
+    phone: '+905551234567',
+    ip: '127.0.0.1',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address',
+  ),
+  basketItems: [
+    BasketItem(
+      id: 'ITEM_1',
+      name: 'Test Product',
+      category: 'Test',
+      price: 100,
+      itemType: ItemType.physical,
     ),
-    buyer: BuyerInfo(
-      id: 'BUYER_1',
-      name: 'Test',
-      surname: 'User',
-      email: 'test@example.com',
-      phone: '+905551234567',
-      ip: '127.0.0.1',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address',
-    ),
-    basketItems: [
-      BasketItem(
-        id: 'ITEM_1',
-        name: 'Test Product',
-        category: 'Test',
-        price: 100.0,
-        itemType: ItemType.physical,
-      ),
-    ],
-  );
-}
+  ],
+);

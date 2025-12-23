@@ -4,11 +4,10 @@ import 'package:crypto/crypto.dart';
 
 /// iyzico IYZWSv2 Authentication
 class IyzicoAuth {
+  IyzicoAuth({required this.apiKey, required this.secretKey});
   final String apiKey;
   final String secretKey;
   String _lastRandomKey = '';
-
-  IyzicoAuth({required this.apiKey, required this.secretKey});
 
   String get lastRandomKey => _lastRandomKey;
 

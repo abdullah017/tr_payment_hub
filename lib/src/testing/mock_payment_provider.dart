@@ -1,26 +1,25 @@
-import '../core/enums.dart';
 import '../core/config.dart';
-import '../core/payment_provider.dart';
+import '../core/enums.dart';
+import '../core/exceptions/payment_exception.dart';
+import '../core/models/installment_info.dart';
 import '../core/models/payment_request.dart';
 import '../core/models/payment_result.dart';
-import '../core/models/installment_info.dart';
-import '../core/models/three_ds_result.dart';
-import '../core/exceptions/payment_exception.dart';
 import '../core/models/refund_request.dart';
+import '../core/models/three_ds_result.dart';
+import '../core/payment_provider.dart';
 
 /// Test için mock provider
 class MockPaymentProvider implements PaymentProvider {
-  final bool shouldSucceed;
-  final Duration delay;
-  final PaymentException? customError;
-
-  bool _initialized = false;
-
   MockPaymentProvider({
     this.shouldSucceed = true,
     this.delay = const Duration(milliseconds: 500),
     this.customError,
   });
+  final bool shouldSucceed;
+  final Duration delay;
+  final PaymentException? customError;
+
+  bool _initialized = false;
 
   @override
   ProviderType get providerType => ProviderType.iyzico;
@@ -83,7 +82,7 @@ class MockPaymentProvider implements PaymentProvider {
       throw PaymentException.threeDSFailed();
     }
 
-    return PaymentResult.success(transactionId: transactionId, amount: 100.0);
+    return PaymentResult.success(transactionId: transactionId, amount: 100);
   }
 
   @override

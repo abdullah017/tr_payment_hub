@@ -1,19 +1,20 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
-import '../../core/enums.dart';
 import '../../core/config.dart';
-import '../../core/payment_provider.dart';
+import '../../core/enums.dart';
+import '../../core/exceptions/payment_exception.dart';
+import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
-import '../../core/models/installment_info.dart';
-import '../../core/models/three_ds_result.dart';
-import '../../core/exceptions/payment_exception.dart';
-import 'iyzico_endpoints.dart';
-import 'iyzico_auth.dart';
-import 'iyzico_mapper.dart';
-import 'iyzico_error_mapper.dart';
 import '../../core/models/refund_request.dart';
+import '../../core/models/three_ds_result.dart';
+import '../../core/payment_provider.dart';
+import 'iyzico_auth.dart';
+import 'iyzico_endpoints.dart';
+import 'iyzico_error_mapper.dart';
+import 'iyzico_mapper.dart';
 
 /// iyzico Payment Provider
 class IyzicoProvider implements PaymentProvider {
@@ -143,7 +144,7 @@ class IyzicoProvider implements PaymentProvider {
 
     // BIN numarası 6 veya 8 hane olmalı
     if (binNumber.length < 6) {
-      throw PaymentException(
+      throw const PaymentException(
         code: 'invalid_bin',
         message: 'BIN number must be at least 6 digits',
         provider: ProviderType.iyzico,
@@ -167,7 +168,7 @@ class IyzicoProvider implements PaymentProvider {
     final installmentInfo = IyzicoMapper.fromInstallmentResponse(response);
 
     if (installmentInfo == null) {
-      throw PaymentException(
+      throw const PaymentException(
         code: 'no_installment_info',
         message: 'No installment information found for this card',
         provider: ProviderType.iyzico,
@@ -236,9 +237,8 @@ class IyzicoProvider implements PaymentProvider {
     }
   }
 
-  String _generateConversationId() {
-    return 'TR${DateTime.now().millisecondsSinceEpoch}';
-  }
+  String _generateConversationId() =>
+      'TR${DateTime.now().millisecondsSinceEpoch}';
 
   Future<Map<String, dynamic>> _post(
     String endpoint,

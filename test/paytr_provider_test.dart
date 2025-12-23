@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import 'package:tr_payment_hub/tr_payment_hub.dart';
 import 'package:tr_payment_hub/src/providers/paytr/paytr_auth.dart';
-import 'package:tr_payment_hub/src/providers/paytr/paytr_mapper.dart';
 import 'package:tr_payment_hub/src/providers/paytr/paytr_error_mapper.dart';
+import 'package:tr_payment_hub/src/providers/paytr/paytr_mapper.dart';
+import 'package:tr_payment_hub/tr_payment_hub.dart';
 
 void main() {
   group('PayTRAuth', () {
@@ -310,14 +310,13 @@ void main() {
 
     setUp(() {
       provider = PayTRProvider();
-      config = PayTRConfig(
+      config = const PayTRConfig(
         merchantId: '123456',
         apiKey: 'test-merchant-key',
         secretKey: 'test-merchant-salt',
         successUrl: 'https://example.com/success',
         failUrl: 'https://example.com/fail',
         callbackUrl: 'https://example.com/callback',
-        isSandbox: true,
       );
     });
 
@@ -335,7 +334,7 @@ void main() {
     });
 
     test('should throw error with invalid config type', () async {
-      final invalidConfig = IyzicoConfig(
+      const invalidConfig = IyzicoConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
@@ -360,7 +359,7 @@ void main() {
       await provider.initialize(config);
 
       expect(
-        () => provider.complete3DSPayment('SP123456', callbackData: null),
+        () => provider.complete3DSPayment('SP123456'),
         throwsA(isA<PaymentException>()),
       );
     });
@@ -370,7 +369,7 @@ void main() {
 
       final installments = await provider.getInstallments(
         binNumber: '552879',
-        amount: 100.0,
+        amount: 100,
       );
 
       expect(installments.options.length, greaterThan(0));
@@ -380,7 +379,7 @@ void main() {
 
   group('PayTRConfig', () {
     test('should return correct base URL', () {
-      final config = PayTRConfig(
+      const config = PayTRConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
@@ -393,7 +392,7 @@ void main() {
     });
 
     test('should validate config correctly', () {
-      final validConfig = PayTRConfig(
+      const validConfig = PayTRConfig(
         merchantId: 'test',
         apiKey: 'test',
         secretKey: 'test',
@@ -402,7 +401,7 @@ void main() {
         callbackUrl: 'https://example.com/callback',
       );
 
-      final invalidConfig = PayTRConfig(
+      const invalidConfig = PayTRConfig(
         merchantId: '',
         apiKey: 'test',
         secretKey: '',
@@ -417,38 +416,34 @@ void main() {
   });
 }
 
-PaymentRequest _createTestRequest() {
-  return PaymentRequest(
-    orderId: 'ORDER_123',
-    amount: 100.0,
-    currency: Currency.tryLira,
-    installment: 1,
-    card: CardInfo(
-      cardHolderName: 'John Doe',
-      cardNumber: '5528790000000008',
-      expireMonth: '12',
-      expireYear: '2030',
-      cvc: '123',
+PaymentRequest _createTestRequest() => const PaymentRequest(
+  orderId: 'ORDER_123',
+  amount: 100,
+  card: CardInfo(
+    cardHolderName: 'John Doe',
+    cardNumber: '5528790000000008',
+    expireMonth: '12',
+    expireYear: '2030',
+    cvc: '123',
+  ),
+  buyer: BuyerInfo(
+    id: 'BUYER_123',
+    name: 'John',
+    surname: 'Doe',
+    email: 'john@example.com',
+    phone: '+905551234567',
+    ip: '127.0.0.1',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address',
+  ),
+  basketItems: [
+    BasketItem(
+      id: 'ITEM_1',
+      name: 'Test Product',
+      category: 'Electronics',
+      price: 100,
+      itemType: ItemType.physical,
     ),
-    buyer: BuyerInfo(
-      id: 'BUYER_123',
-      name: 'John',
-      surname: 'Doe',
-      email: 'john@example.com',
-      phone: '+905551234567',
-      ip: '127.0.0.1',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address',
-    ),
-    basketItems: [
-      BasketItem(
-        id: 'ITEM_1',
-        name: 'Test Product',
-        category: 'Electronics',
-        price: 100.0,
-        itemType: ItemType.physical,
-      ),
-    ],
-  );
-}
+  ],
+);

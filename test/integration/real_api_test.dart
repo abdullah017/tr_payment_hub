@@ -32,7 +32,6 @@ void main() {
         merchantId: merchantId,
         apiKey: apiKey,
         secretKey: secretKey,
-        isSandbox: true,
       );
 
       provider = IyzicoProvider();
@@ -46,7 +45,7 @@ void main() {
     test('should query installments for BIN 552879', () async {
       final installments = await provider.getInstallments(
         binNumber: '552879',
-        amount: 100.0,
+        amount: 100,
       );
 
       expect(installments.binNumber, '552879');
@@ -108,7 +107,6 @@ void main() {
         successUrl: 'https://example.com/success',
         failUrl: 'https://example.com/fail',
         callbackUrl: 'https://example.com/callback',
-        isSandbox: true,
       );
 
       provider = PayTRProvider();
@@ -128,138 +126,127 @@ void main() {
   });
 }
 
-PaymentRequest _createIyzicoRequest() {
-  return PaymentRequest(
-    orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
-    amount: 1.0,
-    currency: Currency.tryLira,
-    installment: 1,
-    card: CardInfo(
-      cardHolderName: 'John Doe',
-      cardNumber: '5528790000000008',
-      expireMonth: '12',
-      expireYear: '2030',
-      cvc: '123',
+PaymentRequest _createIyzicoRequest() => PaymentRequest(
+  orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
+  amount: 1,
+  card: const CardInfo(
+    cardHolderName: 'John Doe',
+    cardNumber: '5528790000000008',
+    expireMonth: '12',
+    expireYear: '2030',
+    cvc: '123',
+  ),
+  buyer: const BuyerInfo(
+    id: 'BUYER_1',
+    name: 'John',
+    surname: 'Doe',
+    email: 'john@example.com',
+    phone: '+905551234567',
+    identityNumber: '11111111111',
+    ip: '127.0.0.1',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address No:1',
+    zipCode: '34000',
+  ),
+  shippingAddress: const AddressInfo(
+    contactName: 'John Doe',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address No:1',
+  ),
+  billingAddress: const AddressInfo(
+    contactName: 'John Doe',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address No:1',
+  ),
+  basketItems: const [
+    BasketItem(
+      id: 'ITEM_1',
+      name: 'Test Product',
+      category: 'Test',
+      price: 1,
+      itemType: ItemType.physical,
     ),
-    buyer: BuyerInfo(
-      id: 'BUYER_1',
-      name: 'John',
-      surname: 'Doe',
-      email: 'john@example.com',
-      phone: '+905551234567',
-      identityNumber: '11111111111',
-      ip: '127.0.0.1',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-      zipCode: '34000',
-    ),
-    shippingAddress: AddressInfo(
-      contactName: 'John Doe',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-    ),
-    billingAddress: AddressInfo(
-      contactName: 'John Doe',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-    ),
-    basketItems: [
-      BasketItem(
-        id: 'ITEM_1',
-        name: 'Test Product',
-        category: 'Test',
-        price: 1.0,
-        itemType: ItemType.physical,
-      ),
-    ],
-  );
-}
+  ],
+);
 
-PaymentRequest _createIyzicoRequestWithCard({required String cardNumber}) {
-  return PaymentRequest(
-    orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
-    amount: 1.0,
-    currency: Currency.tryLira,
-    installment: 1,
-    card: CardInfo(
-      cardHolderName: 'John Doe',
-      cardNumber: cardNumber,
-      expireMonth: '12',
-      expireYear: '2030',
-      cvc: '123',
-    ),
-    buyer: BuyerInfo(
-      id: 'BUYER_1',
-      name: 'John',
-      surname: 'Doe',
-      email: 'john@example.com',
-      phone: '+905551234567',
-      identityNumber: '11111111111',
-      ip: '127.0.0.1',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-      zipCode: '34000',
-    ),
-    shippingAddress: AddressInfo(
-      contactName: 'John Doe',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-    ),
-    billingAddress: AddressInfo(
-      contactName: 'John Doe',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-    ),
-    basketItems: [
-      BasketItem(
-        id: 'ITEM_1',
-        name: 'Test Product',
-        category: 'Test',
-        price: 1.0,
-        itemType: ItemType.physical,
+PaymentRequest _createIyzicoRequestWithCard({required String cardNumber}) =>
+    PaymentRequest(
+      orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
+      amount: 1,
+      card: CardInfo(
+        cardHolderName: 'John Doe',
+        cardNumber: cardNumber,
+        expireMonth: '12',
+        expireYear: '2030',
+        cvc: '123',
       ),
-    ],
-  );
-}
+      buyer: const BuyerInfo(
+        id: 'BUYER_1',
+        name: 'John',
+        surname: 'Doe',
+        email: 'john@example.com',
+        phone: '+905551234567',
+        identityNumber: '11111111111',
+        ip: '127.0.0.1',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Test Address No:1',
+        zipCode: '34000',
+      ),
+      shippingAddress: const AddressInfo(
+        contactName: 'John Doe',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Test Address No:1',
+      ),
+      billingAddress: const AddressInfo(
+        contactName: 'John Doe',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Test Address No:1',
+      ),
+      basketItems: const [
+        BasketItem(
+          id: 'ITEM_1',
+          name: 'Test Product',
+          category: 'Test',
+          price: 1,
+          itemType: ItemType.physical,
+        ),
+      ],
+    );
 
-PaymentRequest _createPayTRRequest() {
-  return PaymentRequest(
-    orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
-    amount: 1.0,
-    currency: Currency.tryLira,
-    installment: 1,
-    card: CardInfo(
-      cardHolderName: 'Test User',
-      cardNumber: '4355084355084358',
-      expireMonth: '12',
-      expireYear: '30',
-      cvc: '000',
+PaymentRequest _createPayTRRequest() => PaymentRequest(
+  orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
+  amount: 1,
+  card: const CardInfo(
+    cardHolderName: 'Test User',
+    cardNumber: '4355084355084358',
+    expireMonth: '12',
+    expireYear: '30',
+    cvc: '000',
+  ),
+  buyer: const BuyerInfo(
+    id: 'BUYER_1',
+    name: 'Test',
+    surname: 'User',
+    email: 'test@example.com',
+    phone: '+905551234567',
+    ip: '127.0.0.1',
+    city: 'Istanbul',
+    country: 'Turkey',
+    address: 'Test Address No:1',
+  ),
+  basketItems: const [
+    BasketItem(
+      id: 'ITEM_1',
+      name: 'Test Product',
+      category: 'Test',
+      price: 1,
+      itemType: ItemType.physical,
     ),
-    buyer: BuyerInfo(
-      id: 'BUYER_1',
-      name: 'Test',
-      surname: 'User',
-      email: 'test@example.com',
-      phone: '+905551234567',
-      ip: '127.0.0.1',
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Test Address No:1',
-    ),
-    basketItems: [
-      BasketItem(
-        id: 'ITEM_1',
-        name: 'Test Product',
-        category: 'Test',
-        price: 1.0,
-        itemType: ItemType.physical,
-      ),
-    ],
-  );
-}
+  ],
+);

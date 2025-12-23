@@ -12,6 +12,12 @@ abstract class PaymentConfig {
 
 /// iyzico için config
 class IyzicoConfig implements PaymentConfig {
+  const IyzicoConfig({
+    required this.merchantId,
+    required this.apiKey,
+    required this.secretKey,
+    this.isSandbox = true,
+  });
   @override
   final String merchantId;
 
@@ -24,25 +30,26 @@ class IyzicoConfig implements PaymentConfig {
   @override
   final bool isSandbox;
 
-  const IyzicoConfig({
-    required this.merchantId,
-    required this.apiKey,
-    required this.secretKey,
-    this.isSandbox = true,
-  });
-
   @override
   String get baseUrl =>
       isSandbox ? 'https://sandbox-api.iyzipay.com' : 'https://api.iyzipay.com';
 
   @override
-  bool validate() {
-    return merchantId.isNotEmpty && apiKey.isNotEmpty && secretKey.isNotEmpty;
-  }
+  bool validate() =>
+      merchantId.isNotEmpty && apiKey.isNotEmpty && secretKey.isNotEmpty;
 }
 
 /// PayTR için config
 class PayTRConfig implements PaymentConfig {
+  const PayTRConfig({
+    required this.merchantId,
+    required this.apiKey,
+    required this.secretKey,
+    required this.successUrl,
+    required this.failUrl,
+    required this.callbackUrl,
+    this.isSandbox = true,
+  });
   @override
   final String merchantId;
 
@@ -59,25 +66,14 @@ class PayTRConfig implements PaymentConfig {
   @override
   final bool isSandbox;
 
-  const PayTRConfig({
-    required this.merchantId,
-    required this.apiKey,
-    required this.secretKey,
-    required this.successUrl,
-    required this.failUrl,
-    required this.callbackUrl,
-    this.isSandbox = true,
-  });
-
   @override
   String get baseUrl => 'https://www.paytr.com';
 
   @override
-  bool validate() {
-    return merchantId.isNotEmpty &&
-        apiKey.isNotEmpty &&
-        secretKey.isNotEmpty &&
-        successUrl.isNotEmpty &&
-        failUrl.isNotEmpty;
-  }
+  bool validate() =>
+      merchantId.isNotEmpty &&
+      apiKey.isNotEmpty &&
+      secretKey.isNotEmpty &&
+      successUrl.isNotEmpty &&
+      failUrl.isNotEmpty;
 }

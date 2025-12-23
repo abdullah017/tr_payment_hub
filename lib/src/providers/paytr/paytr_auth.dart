@@ -3,15 +3,14 @@ import 'package:crypto/crypto.dart';
 
 /// PayTR Token Authentication
 class PayTRAuth {
-  final String merchantId;
-  final String merchantKey;
-  final String merchantSalt;
-
   PayTRAuth({
     required this.merchantId,
     required this.merchantKey,
     required this.merchantSalt,
   });
+  final String merchantId;
+  final String merchantKey;
+  final String merchantSalt;
 
   /// iFrame API için token oluştur
   /// Hash string sırası: merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency + test_mode

@@ -1,9 +1,9 @@
 import 'core/enums.dart';
+import 'core/exceptions/payment_exception.dart';
 import 'core/payment_provider.dart';
 import 'providers/iyzico/iyzico_provider.dart';
 import 'providers/paytr/paytr_provider.dart';
 import 'testing/mock_payment_provider.dart';
-import 'core/exceptions/payment_exception.dart';
 
 /// TR Payment Hub - Ana Factory Sınıfı
 ///
@@ -40,13 +40,11 @@ class TrPaymentHub {
     bool shouldSucceed = true,
     Duration delay = const Duration(milliseconds: 500),
     PaymentException? customError,
-  }) {
-    return MockPaymentProvider(
-      shouldSucceed: shouldSucceed,
-      delay: delay,
-      customError: customError,
-    );
-  }
+  }) => MockPaymentProvider(
+    shouldSucceed: shouldSucceed,
+    delay: delay,
+    customError: customError,
+  );
 
   /// Kütüphane versiyonu
   static const String version = '0.1.0';

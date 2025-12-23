@@ -1,0 +1,22 @@
+name: tr_payment_hub_example
+description: Example Flutter app demonstrating tr_payment_hub usage
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  tr_payment_hub:
+    path: ../
+  webview_flutter: ^4.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

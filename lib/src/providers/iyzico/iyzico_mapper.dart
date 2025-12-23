@@ -1,14 +1,15 @@
 import 'dart:convert';
+
 import '../../core/enums.dart';
-import '../../core/models/card_info.dart';
-import '../../core/models/buyer_info.dart';
 import '../../core/models/basket_item.dart';
+import '../../core/models/buyer_info.dart';
+import '../../core/models/card_info.dart';
+import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
-import '../../core/models/installment_info.dart';
+import '../../core/models/refund_request.dart';
 import '../../core/models/three_ds_result.dart';
 import 'iyzico_error_mapper.dart';
-import '../../core/models/refund_request.dart';
 
 /// iyzico request/response dönüştürücü
 class IyzicoMapper {
@@ -22,24 +23,22 @@ class IyzicoMapper {
   static Map<String, dynamic> toPaymentRequest(
     PaymentRequest request,
     String conversationId,
-  ) {
-    return {
-      'locale': 'tr',
-      'conversationId': conversationId,
-      'price': request.amount.toString(),
-      'paidPrice': request.effectivePaidAmount.toString(),
-      'currency': _mapCurrency(request.currency),
-      'installment': request.installment,
-      'basketId': request.orderId,
-      'paymentChannel': 'WEB',
-      'paymentGroup': 'PRODUCT',
-      'paymentCard': _mapCard(request.card),
-      'buyer': _mapBuyer(request.buyer),
-      'shippingAddress': _mapAddress(request.buyer, 'shipping'),
-      'billingAddress': _mapAddress(request.buyer, 'billing'),
-      'basketItems': request.basketItems.map(_mapBasketItem).toList(),
-    };
-  }
+  ) => {
+    'locale': 'tr',
+    'conversationId': conversationId,
+    'price': request.amount.toString(),
+    'paidPrice': request.effectivePaidAmount.toString(),
+    'currency': _mapCurrency(request.currency),
+    'installment': request.installment,
+    'basketId': request.orderId,
+    'paymentChannel': 'WEB',
+    'paymentGroup': 'PRODUCT',
+    'paymentCard': _mapCard(request.card),
+    'buyer': _mapBuyer(request.buyer),
+    'shippingAddress': _mapAddress(request.buyer, 'shipping'),
+    'billingAddress': _mapAddress(request.buyer, 'billing'),
+    'basketItems': request.basketItems.map(_mapBasketItem).toList(),
+  };
 
   /// PaymentRequest'i iyzico 3DS formatına çevir
   static Map<String, dynamic> to3DSInitRequest(
@@ -57,30 +56,26 @@ class IyzicoMapper {
     required String binNumber,
     required double price,
     String? conversationId,
-  }) {
-    return {
-      'locale': 'tr',
-      'conversationId':
-          conversationId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      'binNumber': binNumber,
-      'price': price.toString(),
-    };
-  }
+  }) => {
+    'locale': 'tr',
+    'conversationId':
+        conversationId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    'binNumber': binNumber,
+    'price': price.toString(),
+  };
 
   /// İade isteği
   static Map<String, dynamic> toRefundRequest(
     RefundRequest request,
     String conversationId,
-  ) {
-    return {
-      'locale': 'tr',
-      'conversationId': conversationId,
-      'paymentTransactionId': request.transactionId,
-      'price': request.amount.toString(),
-      'currency': _mapCurrency(request.currency),
-      'ip': request.ip,
-    };
-  }
+  ) => {
+    'locale': 'tr',
+    'conversationId': conversationId,
+    'paymentTransactionId': request.transactionId,
+    'price': request.amount.toString(),
+    'currency': _mapCurrency(request.currency),
+    'ip': request.ip,
+  };
 
   // ============================================
   // RESPONSE MAPPERS
@@ -208,52 +203,44 @@ class IyzicoMapper {
     }
   }
 
-  static Map<String, dynamic> _mapCard(CardInfo card) {
-    return {
-      'cardHolderName': card.cardHolderName,
-      'cardNumber': card.cardNumber,
-      'expireMonth': card.expireMonth,
-      'expireYear': card.expireYear,
-      'cvc': card.cvc,
-      'registerCard': card.saveCard ? 1 : 0,
-    };
-  }
+  static Map<String, dynamic> _mapCard(CardInfo card) => {
+    'cardHolderName': card.cardHolderName,
+    'cardNumber': card.cardNumber,
+    'expireMonth': card.expireMonth,
+    'expireYear': card.expireYear,
+    'cvc': card.cvc,
+    'registerCard': card.saveCard ? 1 : 0,
+  };
 
-  static Map<String, dynamic> _mapBuyer(BuyerInfo buyer) {
-    return {
-      'id': buyer.id,
-      'name': buyer.name,
-      'surname': buyer.surname,
-      'email': buyer.email,
-      'gsmNumber': buyer.phone,
-      'identityNumber': buyer.identityNumber ?? '11111111111',
-      'registrationAddress': buyer.address,
-      'city': buyer.city,
-      'country': buyer.country,
-      'zipCode': buyer.zipCode ?? '34000',
-      'ip': buyer.ip,
-    };
-  }
+  static Map<String, dynamic> _mapBuyer(BuyerInfo buyer) => {
+    'id': buyer.id,
+    'name': buyer.name,
+    'surname': buyer.surname,
+    'email': buyer.email,
+    'gsmNumber': buyer.phone,
+    'identityNumber': buyer.identityNumber ?? '11111111111',
+    'registrationAddress': buyer.address,
+    'city': buyer.city,
+    'country': buyer.country,
+    'zipCode': buyer.zipCode ?? '34000',
+    'ip': buyer.ip,
+  };
 
-  static Map<String, dynamic> _mapAddress(BuyerInfo buyer, String type) {
-    return {
-      'contactName': buyer.fullName,
-      'city': buyer.city,
-      'country': buyer.country,
-      'address': buyer.address,
-      'zipCode': buyer.zipCode ?? '34000',
-    };
-  }
+  static Map<String, dynamic> _mapAddress(BuyerInfo buyer, String type) => {
+    'contactName': buyer.fullName,
+    'city': buyer.city,
+    'country': buyer.country,
+    'address': buyer.address,
+    'zipCode': buyer.zipCode ?? '34000',
+  };
 
-  static Map<String, dynamic> _mapBasketItem(BasketItem item) {
-    return {
-      'id': item.id,
-      'name': item.name,
-      'category1': item.category,
-      'itemType': item.itemType == ItemType.physical ? 'PHYSICAL' : 'VIRTUAL',
-      'price': item.price.toString(),
-    };
-  }
+  static Map<String, dynamic> _mapBasketItem(BasketItem item) => {
+    'id': item.id,
+    'name': item.name,
+    'category1': item.category,
+    'itemType': item.itemType == ItemType.physical ? 'PHYSICAL' : 'VIRTUAL',
+    'price': item.price.toString(),
+  };
 
   static String _extractTransactionId(Map<String, dynamic> response) {
     // İlk itemTransaction'dan paymentTransactionId al

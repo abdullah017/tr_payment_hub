@@ -2,12 +2,6 @@ import '../enums.dart';
 
 /// Ödeme hatası
 class PaymentException implements Exception {
-  final String code;
-  final String message;
-  final String? providerCode;
-  final String? providerMessage;
-  final ProviderType? provider;
-
   const PaymentException({
     required this.code,
     required this.message,
@@ -129,6 +123,11 @@ class PaymentException implements Exception {
     providerMessage: providerMessage,
     provider: provider,
   );
+  final String code;
+  final String message;
+  final String? providerCode;
+  final String? providerMessage;
+  final ProviderType? provider;
 
   @override
   String toString() => 'PaymentException($code): $message';

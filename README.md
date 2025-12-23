@@ -2,36 +2,48 @@
 
 [![Pub Version](https://img.shields.io/pub/v/tr_payment_hub)](https://pub.dev/packages/tr_payment_hub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)](https://dart.dev)
 
-Türkiye ödeme sistemleri için birleşik Flutter/Dart kütüphanesi.
+**[Türkçe Dokümantasyon](README_TR.md)**
 
-**Desteklenen Sağlayıcılar:**
-- ✅ iyzico
-- ✅ PayTR
-- 🔜 Param (yakında)
-- 🔜 Sipay (yakında)
+Unified Turkish payment gateway integration for Flutter/Dart applications.
 
-## Özellikler
+## Supported Providers
 
-- 🔄 **Unified API** - Tek interface ile tüm sağlayıcılara erişim
-- 🔒 **Güvenli** - Hassas verilerin otomatik maskelenmesi
-- 🧪 **Test Desteği** - Mock provider ile kolay test
-- 📱 **Platform Bağımsız** - Web, iOS, Android, Desktop
-- 💳 **3D Secure** - Tüm sağlayıcılarda 3DS desteği
-- 💰 **Taksit** - Taksit sorgulama ve ödeme
+| Provider | Status | Non-3DS | 3DS | Installments | Refunds |
+|----------|--------|---------|-----|--------------|---------|
+| iyzico   | ✅ Stable | Yes | Yes | Yes | Yes |
+| PayTR    | ✅ Stable | Yes | Yes | Yes | Yes |
+| Param    | 🔜 Planned | - | - | - | - |
+| Sipay    | 🔜 Planned | - | - | - | - |
 
-## Kurulum
+## Features
+
+- **Unified API** - Single interface for all payment providers
+- **Type Safe** - Full Dart null safety support
+- **Secure** - Automatic sensitive data masking with LogSanitizer
+- **Testable** - Built-in MockPaymentProvider for unit testing
+- **Cross Platform** - Works on iOS, Android, Web, and Desktop
+
+## Installation
+
+Add to your `pubspec.yaml`:
+
 ```yaml
 dependencies:
-  tr_payment_hub: ^1.0.0
+  tr_payment_hub: ^1.0.2
 ```
+
+Then run:
+
 ```bash
 dart pub get
 ```
 
-## Hızlı Başlangıç
+## Quick Start
 
-### 1. Provider Oluşturma
+### 1. Create Provider
+
 ```dart
 import 'package:tr_payment_hub/tr_payment_hub.dart';
 
@@ -41,21 +53,22 @@ final provider = TrPaymentHub.create(ProviderType.iyzico);
 // PayTR
 final provider = TrPaymentHub.create(ProviderType.paytr);
 
-// Test için Mock
+// Mock (for testing)
 final provider = TrPaymentHub.createMock(shouldSucceed: true);
 ```
 
-### 2. Konfigürasyon
+### 2. Initialize with Config
+
 ```dart
-// iyzico Config
+// iyzico Configuration
 final config = IyzicoConfig(
   merchantId: 'YOUR_MERCHANT_ID',
   apiKey: 'YOUR_API_KEY',
   secretKey: 'YOUR_SECRET_KEY',
-  isSandbox: true, // Production için false
+  isSandbox: true, // false for production
 );
 
-// PayTR Config
+// PayTR Configuration
 final config = PayTRConfig(
   merchantId: 'YOUR_MERCHANT_ID',
   apiKey: 'YOUR_MERCHANT_KEY',
@@ -69,7 +82,8 @@ final config = PayTRConfig(
 await provider.initialize(config);
 ```
 
-### 3. Ödeme Yapma
+### 3. Create Payment
+
 ```dart
 final request = PaymentRequest(
   orderId: 'ORDER_123',
@@ -107,153 +121,154 @@ final request = PaymentRequest(
 
 try {
   final result = await provider.createPayment(request);
-  
   if (result.isSuccess) {
-    print('Ödeme başarılı! ID: ${result.transactionId}');
+    print('Payment successful! ID: ${result.transactionId}');
   }
 } on PaymentException catch (e) {
-  print('Hata: ${e.message}');
+  print('Payment failed: ${e.message}');
 }
 ```
 
-### 4. 3D Secure Ödeme
+### 4. 3D Secure Payment
+
 ```dart
-// 3DS başlat
+// Step 1: Initialize 3DS
 final threeDSResult = await provider.init3DSPayment(
   request.copyWith(callbackUrl: 'https://yoursite.com/3ds-callback'),
 );
 
 if (threeDSResult.needsWebView) {
-  // WebView'da göster
-  // iyzico: threeDSResult.htmlContent
-  // PayTR: threeDSResult.redirectUrl
+  // Step 2: Display in WebView
+  // iyzico: Use threeDSResult.htmlContent
+  // PayTR: Redirect to threeDSResult.redirectUrl
 }
 
-// Callback sonrası tamamla
+// Step 3: Complete after callback
 final result = await provider.complete3DSPayment(
   threeDSResult.transactionId!,
-  callbackData: callbackData,
+  callbackData: receivedCallbackData,
 );
 ```
 
-### 5. Taksit Sorgulama
+### 5. Query Installments
+
 ```dart
 final installments = await provider.getInstallments(
-  binNumber: '552879', // Kartın ilk 6 hanesi
+  binNumber: '552879', // First 6 digits of card
   amount: 1000.0,
 );
 
-print('Banka: ${installments.bankName}');
-print('Kart: ${installments.cardFamily}');
-
+print('Bank: ${installments.bankName}');
 for (final option in installments.options) {
-  print('${option.installmentNumber} taksit: ${option.totalPrice} TL');
+  print('${option.installmentNumber}x: ${option.totalPrice} TL');
 }
 ```
 
-### 6. İade
+### 6. Process Refund
+
 ```dart
 final refundResult = await provider.refund(RefundRequest(
-  transactionId: 'TRANSACTION_ID',
-  amount: 50.0, // Kısmi iade
-  ip: '127.0.0.1',
+  transactionId: 'ORIGINAL_TRANSACTION_ID',
+  amount: 50.0, // Partial refund
 ));
 
 if (refundResult.isSuccess) {
-  print('İade başarılı!');
+  print('Refund successful!');
 }
 ```
 
-## Hata Yönetimi
+## Error Handling
+
 ```dart
 try {
   await provider.createPayment(request);
 } on PaymentException catch (e) {
   switch (e.code) {
     case 'insufficient_funds':
-      print('Yetersiz bakiye');
+      // Handle insufficient balance
       break;
     case 'invalid_card':
-      print('Geçersiz kart');
+      // Handle invalid card
       break;
     case 'expired_card':
-      print('Kartın süresi dolmuş');
+      // Handle expired card
       break;
     case 'threeds_failed':
-      print('3D Secure doğrulaması başarısız');
+      // Handle 3DS failure
       break;
     default:
-      print('Hata: ${e.message}');
+      print('Error: ${e.message}');
   }
 }
 ```
 
-## Test
+## Testing
+
 ```dart
-// Mock provider ile test
+// Create mock provider
 final mockProvider = TrPaymentHub.createMock(
   shouldSucceed: true,
   delay: Duration(milliseconds: 100),
 );
 
-// Başarısız senaryo testi
+// Test failure scenarios
 final failingProvider = TrPaymentHub.createMock(
   shouldSucceed: false,
   customError: PaymentException.insufficientFunds(),
 );
 ```
 
-## Güvenlik
+## Security Best Practices
 
-- 🔐 Kart bilgileri asla loglanmaz
-- 🛡️ `LogSanitizer` ile hassas veri maskeleme
-- ✅ PCI-DSS uyumlu yapı
+- Card numbers are never logged
+- Use `LogSanitizer.sanitize()` before logging any payment data
+- Always use HTTPS callback URLs
+- Store API keys securely (environment variables, secure storage)
+
 ```dart
-// Log temizleme
+// Safe logging
 final safeLog = LogSanitizer.sanitize(sensitiveData);
-
-// Map temizleme
 final safeMap = LogSanitizer.sanitizeMap(requestData);
 ```
 
-## ⚠️ Flutter Web Kullanıcıları
+## Flutter Web Notice
 
-Türkiye'deki ödeme API'leri CORS kısıtlamalarına sahiptir. Flutter Web'de:
+Turkish payment APIs have CORS restrictions. For Flutter Web:
 
-1. Backend proxy kullanın (önerilen)
-2. Cloud Functions üzerinden yönlendirin
-3. Sadece mobil platformlarda kullanın
+1. Use a backend proxy (recommended)
+2. Route through Cloud Functions
+3. Or use mobile platforms only
 
-## API Referansı
+## API Reference
 
-| Metod | Açıklama |
-|-------|----------|
-| `initialize(config)` | Provider'ı başlatır |
-| `createPayment(request)` | Non-3DS ödeme yapar |
-| `init3DSPayment(request)` | 3DS ödeme başlatır |
-| `complete3DSPayment(id)` | 3DS ödemeyi tamamlar |
-| `getInstallments(bin, amount)` | Taksit seçeneklerini getirir |
-| `refund(request)` | İade işlemi yapar |
-| `getPaymentStatus(id)` | Ödeme durumunu sorgular |
-| `dispose()` | Kaynakları temizler |
+| Method | Description |
+|--------|-------------|
+| `initialize(config)` | Initialize the provider |
+| `createPayment(request)` | Process non-3DS payment |
+| `init3DSPayment(request)` | Start 3DS payment flow |
+| `complete3DSPayment(id)` | Complete 3DS payment |
+| `getInstallments(bin, amount)` | Get installment options |
+| `refund(request)` | Process refund |
+| `getPaymentStatus(id)` | Check payment status |
+| `dispose()` | Clean up resources |
 
-## Katkıda Bulunma
+## Contributing
 
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing`)
-3. Commit edin (`git commit -m 'Add amazing feature'`)
-4. Push edin (`git push origin feature/amazing`)
-5. Pull Request açın
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open a Pull Request
 
-## Lisans
+## License
 
-MIT License - detaylar için [LICENSE](LICENSE) dosyasına bakın.
+MIT License - see [LICENSE](LICENSE) for details.
 
-## İletişim
+## Contact
 
-- GitHub Issues: [Sorun Bildir](https://github.com/softVortex/tr_payment_hub/issues)
-- Email: info@softvortex.com
+- GitHub Issues: [Report Issue](https://github.com/abdullah017/tr_payment_hub/issues)
+- Email: dev.abdullahtas@gmail.com
 
 ---
 
-**Not:** Bu paket resmi iyzico veya PayTR paketi değildir. Topluluk tarafından geliştirilmiştir.
+**Note:** This is a community package, not an official iyzico or PayTR product.

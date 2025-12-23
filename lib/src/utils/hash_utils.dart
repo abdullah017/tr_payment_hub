@@ -31,14 +31,10 @@ class HashUtils {
   }
 
   /// Base64 encode
-  static String base64Encode(String data) {
-    return base64.encode(utf8.encode(data));
-  }
+  static String base64Encode(String data) => base64.encode(utf8.encode(data));
 
   /// Base64 decode
-  static String base64Decode(String data) {
-    return utf8.decode(base64.decode(data));
-  }
+  static String base64Decode(String data) => utf8.decode(base64.decode(data));
 
   /// Random string oluştur (conversationId vb. için)
   static String generateRandomKey([int length = 32]) {
