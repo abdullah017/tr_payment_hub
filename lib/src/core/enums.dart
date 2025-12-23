@@ -9,7 +9,7 @@ enum ProviderType {
 }
 
 /// Para birimleri
-enum Currency { TRY, USD, EUR, GBP }
+enum Currency { tryLira, usd, eur, gbp }
 
 /// Kart tipleri
 enum CardType { creditCard, debitCard, prepaidCard }

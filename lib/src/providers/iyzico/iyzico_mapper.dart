@@ -197,13 +197,13 @@ class IyzicoMapper {
 
   static String _mapCurrency(Currency currency) {
     switch (currency) {
-      case Currency.TRY:
+      case Currency.tryLira:
         return 'TRY';
-      case Currency.USD:
+      case Currency.usd:
         return 'USD';
-      case Currency.EUR:
+      case Currency.eur:
         return 'EUR';
-      case Currency.GBP:
+      case Currency.gbp:
         return 'GBP';
     }
   }

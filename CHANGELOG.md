@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2
+
+- Fix enum naming to follow Dart lowerCamelCase conventions
+  - `Currency.TRY` -> `Currency.tryLira`
+  - `Currency.USD` -> `Currency.usd`
+  - `Currency.EUR` -> `Currency.eur`
+  - `Currency.GBP` -> `Currency.gbp`
+
+## 1.0.1
+
+- Fix repository URLs in pubspec.yaml
+
 ## 1.0.0
 
 - Initial release

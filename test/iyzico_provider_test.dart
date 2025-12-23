@@ -405,7 +405,7 @@ PaymentRequest _createTestRequest() {
   return PaymentRequest(
     orderId: 'ORDER_123',
     amount: 100.0,
-    currency: Currency.TRY,
+    currency: Currency.tryLira,
     installment: 1,
     card: CardInfo(
       cardHolderName: 'John Doe',

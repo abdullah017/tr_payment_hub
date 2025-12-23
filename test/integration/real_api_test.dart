@@ -132,7 +132,7 @@ PaymentRequest _createIyzicoRequest() {
   return PaymentRequest(
     orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
     amount: 1.0,
-    currency: Currency.TRY,
+    currency: Currency.tryLira,
     installment: 1,
     card: CardInfo(
       cardHolderName: 'John Doe',
@@ -182,7 +182,7 @@ PaymentRequest _createIyzicoRequestWithCard({required String cardNumber}) {
   return PaymentRequest(
     orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
     amount: 1.0,
-    currency: Currency.TRY,
+    currency: Currency.tryLira,
     installment: 1,
     card: CardInfo(
       cardHolderName: 'John Doe',
@@ -232,7 +232,7 @@ PaymentRequest _createPayTRRequest() {
   return PaymentRequest(
     orderId: 'TEST_${DateTime.now().millisecondsSinceEpoch}',
     amount: 1.0,
-    currency: Currency.TRY,
+    currency: Currency.tryLira,
     installment: 1,
     card: CardInfo(
       cardHolderName: 'Test User',

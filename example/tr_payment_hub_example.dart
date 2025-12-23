@@ -155,7 +155,7 @@ PaymentRequest _createTestRequest() {
   return PaymentRequest(
     orderId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
     amount: 100.0,
-    currency: Currency.TRY,
+    currency: Currency.tryLira,
     installment: 1,
     card: CardInfo(
       cardHolderName: 'John Doe',

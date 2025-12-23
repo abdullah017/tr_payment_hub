@@ -73,7 +73,7 @@ class PaymentRequest {
     required this.orderId,
     required this.amount,
     this.paidPrice,
-    this.currency = Currency.TRY,
+    this.currency = Currency.tryLira,
     this.installment = 1,
     required this.card,
     required this.buyer,

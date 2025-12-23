@@ -23,7 +23,7 @@ class RefundRequest {
   const RefundRequest({
     required this.transactionId,
     required this.amount,
-    this.currency = Currency.TRY,
+    this.currency = Currency.tryLira,
     this.ip,
     this.reason,
     this.metadata,
