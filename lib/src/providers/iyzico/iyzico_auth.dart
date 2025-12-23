@@ -6,41 +6,49 @@ import 'package:crypto/crypto.dart';
 class IyzicoAuth {
   final String apiKey;
   final String secretKey;
+  String _lastRandomKey = '';
 
   IyzicoAuth({required this.apiKey, required this.secretKey});
 
-  /// Authorization header değerini oluştur
-  String generateAuthorizationHeader(String requestBody) {
-    final randomKey = _generateRandomKey();
-    final payload = _preparePayload(randomKey, requestBody);
-    final signature = _calculateSignature(payload);
+  String get lastRandomKey => _lastRandomKey;
 
-    final authString = '$apiKey&$randomKey&$signature';
+  /// Authorization header değerini oluştur
+  /// [uriPath] - API endpoint path (örn: /payment/bin/check)
+  /// [requestBody] - JSON request body
+  String generateAuthorizationHeader(String uriPath, String requestBody) {
+    // 1. Random key oluştur
+    _lastRandomKey = _generateRandomKey();
+
+    // 2. Payload: randomKey + uriPath + requestBody
+    final payload = '$_lastRandomKey$uriPath$requestBody';
+
+    // 3. HMAC-SHA256 signature
+    final signature = _calculateHmacSignature(payload);
+
+    // 4. Auth string format: apiKey:xxx&randomKey:xxx&signature:xxx
+    final authString =
+        'apiKey:$apiKey&randomKey:$_lastRandomKey&signature:$signature';
+
+    // 5. Base64 encode
     final base64Auth = base64.encode(utf8.encode(authString));
 
     return 'IYZWSv2 $base64Auth';
   }
 
-  /// Random key oluştur
+  /// Random key oluştur (timestamp + random)
   String _generateRandomKey() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = Random.secure();
-    final values = List<int>.generate(16, (_) => random.nextInt(256));
-    return values.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  /// Payload hazırla
-  String _preparePayload(String randomKey, String requestBody) {
-    // SHA256 hash of request body
-    final bodyHash = sha256.convert(utf8.encode(requestBody)).toString();
-    return '$randomKey$bodyHash';
+    final randomPart = List.generate(8, (_) => random.nextInt(10)).join();
+    return '$timestamp$randomPart';
   }
 
   /// HMAC-SHA256 signature hesapla
-  String _calculateSignature(String payload) {
+  String _calculateHmacSignature(String data) {
     final key = utf8.encode(secretKey);
-    final data = utf8.encode(payload);
+    final bytes = utf8.encode(data);
     final hmac = Hmac(sha256, key);
-    final digest = hmac.convert(data);
+    final digest = hmac.convert(bytes);
     return digest.toString();
   }
 }

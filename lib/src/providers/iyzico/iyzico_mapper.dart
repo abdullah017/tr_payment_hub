@@ -8,6 +8,7 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/installment_info.dart';
 import '../../core/models/three_ds_result.dart';
 import 'iyzico_error_mapper.dart';
+import '../../core/models/refund_request.dart';
 
 /// iyzico request/response dönüştürücü
 class IyzicoMapper {

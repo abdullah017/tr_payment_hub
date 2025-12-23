@@ -1,7 +1,29 @@
 /// Turkish Payment Gateway Integration Library
 ///
 /// Unified API for Turkish payment providers (iyzico, PayTR, etc.)
+///
+/// ## Quick Start
+///
+/// ```dart
+/// import 'package:tr_payment_hub/tr_payment_hub.dart';
+///
+/// // Provider oluştur
+/// final provider = TrPaymentHub.create(ProviderType.iyzico);
+///
+/// // Config ile başlat
+/// await provider.initialize(IyzicoConfig(
+///   merchantId: 'your_merchant_id',
+///   apiKey: 'your_api_key',
+///   secretKey: 'your_secret_key',
+/// ));
+///
+/// // Ödeme yap
+/// final result = await provider.createPayment(request);
+/// ```
 library;
+
+// Factory
+export 'src/tr_payment_hub_base.dart';
 
 // Core
 export 'src/core/enums.dart';
@@ -27,3 +49,6 @@ export 'src/testing/mock_payment_provider.dart';
 
 // Providers
 export 'src/providers/iyzico/iyzico_provider.dart';
+export 'src/providers/paytr/paytr_provider.dart';
+
+export 'src/core/models/refund_request.dart';

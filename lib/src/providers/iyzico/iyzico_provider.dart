@@ -13,6 +13,7 @@ import 'iyzico_endpoints.dart';
 import 'iyzico_auth.dart';
 import 'iyzico_mapper.dart';
 import 'iyzico_error_mapper.dart';
+import '../../core/models/refund_request.dart';
 
 /// iyzico Payment Provider
 class IyzicoProvider implements PaymentProvider {
@@ -245,7 +246,7 @@ class IyzicoProvider implements PaymentProvider {
   ) async {
     final url = Uri.parse('${_config.baseUrl}$endpoint');
     final jsonBody = jsonEncode(body);
-    final authHeader = _auth.generateAuthorizationHeader(jsonBody);
+    final authHeader = _auth.generateAuthorizationHeader(endpoint, jsonBody);
 
     try {
       final response = await _httpClient
@@ -254,6 +255,7 @@ class IyzicoProvider implements PaymentProvider {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': authHeader,
+              'x-iyzi-rnd': _auth.lastRandomKey,
             },
             body: jsonBody,
           )

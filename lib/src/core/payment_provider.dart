@@ -4,6 +4,7 @@ import 'models/payment_request.dart';
 import 'models/payment_result.dart';
 import 'models/installment_info.dart';
 import 'models/three_ds_result.dart';
+import 'models/refund_request.dart';
 
 /// Ana payment provider interface
 abstract class PaymentProvider {

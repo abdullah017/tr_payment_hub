@@ -17,15 +17,15 @@ void main() {
 
     test('should generate authorization header', () {
       final body = '{"test": "data"}';
-      final header = auth.generateAuthorizationHeader(body);
+      final header = auth.generateAuthorizationHeader('/payment/auth', body);
 
       expect(header, startsWith('IYZWSv2 '));
       expect(header.length, greaterThan(20));
     });
 
     test('should generate different headers for different bodies', () {
-      final header1 = auth.generateAuthorizationHeader('{"a": 1}');
-      final header2 = auth.generateAuthorizationHeader('{"b": 2}');
+      final header1 = auth.generateAuthorizationHeader('/payment/auth', '{"a": 1}');
+      final header2 = auth.generateAuthorizationHeader('/payment/auth', '{"b": 2}');
 
       // Random key nedeniyle her zaman farklı olacak
       expect(header1, isNot(equals(header2)));
