@@ -1,6 +1,7 @@
 /// Turkish Payment Gateway Integration Library
 ///
 /// Unified API for Turkish payment providers (iyzico, PayTR, etc.)
+library;
 
 // Core
 export 'src/core/enums.dart';
@@ -23,3 +24,6 @@ export 'src/utils/log_sanitizer.dart';
 
 // Testing
 export 'src/testing/mock_payment_provider.dart';
+
+// Providers
+export 'src/providers/iyzico/iyzico_provider.dart';
