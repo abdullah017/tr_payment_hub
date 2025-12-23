@@ -1,10 +1,10 @@
 name: tr_payment_hub
 description: Unified Turkish payment gateway integration for Flutter/Dart.
   Supports iyzico, PayTR and more with a single, clean API.
-version: 1.0.0
-homepage: https://github.com/softVortex/tr_payment_hub
-repository: https://github.com/softVortex/tr_payment_hub
-issue_tracker: https://github.com/softVortex/tr_payment_hub/issues
+version: 1.0.1
+homepage: https://github.com/abdullah017/tr_payment_hub
+repository: https://github.com/abdullah017/tr_payment_hub
+issue_tracker: https://github.com/abdullah017/tr_payment_hub/issues
 
 topics:
   - payment
