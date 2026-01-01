@@ -49,18 +49,18 @@ class BuyerInfo {
   ///
   /// Throws [TypeError] if required fields are missing or have wrong types.
   factory BuyerInfo.fromJson(Map<String, dynamic> json) => BuyerInfo(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    surname: json['surname'] as String,
-    email: json['email'] as String,
-    phone: json['phone'] as String,
-    ip: json['ip'] as String,
-    city: json['city'] as String,
-    country: json['country'] as String,
-    address: json['address'] as String,
-    identityNumber: json['identityNumber'] as String?,
-    zipCode: json['zipCode'] as String?,
-  );
+        id: json['id'] as String,
+        name: json['name'] as String,
+        surname: json['surname'] as String,
+        email: json['email'] as String,
+        phone: json['phone'] as String,
+        ip: json['ip'] as String,
+        city: json['city'] as String,
+        country: json['country'] as String,
+        address: json['address'] as String,
+        identityNumber: json['identityNumber'] as String?,
+        zipCode: json['zipCode'] as String?,
+      );
 
   /// Unique identifier for the buyer in your system.
   ///
@@ -129,18 +129,18 @@ class BuyerInfo {
   ///
   /// Useful for debugging, logging (with sanitization), and serialization.
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'surname': surname,
-    'email': email,
-    'phone': phone,
-    if (identityNumber != null) 'identityNumber': identityNumber,
-    'ip': ip,
-    'city': city,
-    'country': country,
-    'address': address,
-    if (zipCode != null) 'zipCode': zipCode,
-  };
+        'id': id,
+        'name': name,
+        'surname': surname,
+        'email': email,
+        'phone': phone,
+        if (identityNumber != null) 'identityNumber': identityNumber,
+        'ip': ip,
+        'city': city,
+        'country': country,
+        'address': address,
+        if (zipCode != null) 'zipCode': zipCode,
+      };
 
   /// Creates a copy of this instance with the given fields replaced.
   BuyerInfo copyWith({
@@ -155,19 +155,20 @@ class BuyerInfo {
     String? address,
     String? identityNumber,
     String? zipCode,
-  }) => BuyerInfo(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    surname: surname ?? this.surname,
-    email: email ?? this.email,
-    phone: phone ?? this.phone,
-    ip: ip ?? this.ip,
-    city: city ?? this.city,
-    country: country ?? this.country,
-    address: address ?? this.address,
-    identityNumber: identityNumber ?? this.identityNumber,
-    zipCode: zipCode ?? this.zipCode,
-  );
+  }) =>
+      BuyerInfo(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        surname: surname ?? this.surname,
+        email: email ?? this.email,
+        phone: phone ?? this.phone,
+        ip: ip ?? this.ip,
+        city: city ?? this.city,
+        country: country ?? this.country,
+        address: address ?? this.address,
+        identityNumber: identityNumber ?? this.identityNumber,
+        zipCode: zipCode ?? this.zipCode,
+      );
 
   @override
   bool operator ==(Object other) =>
@@ -188,18 +189,18 @@ class BuyerInfo {
 
   @override
   int get hashCode => Object.hash(
-    id,
-    name,
-    surname,
-    email,
-    phone,
-    identityNumber,
-    ip,
-    city,
-    country,
-    address,
-    zipCode,
-  );
+        id,
+        name,
+        surname,
+        email,
+        phone,
+        identityNumber,
+        ip,
+        city,
+        country,
+        address,
+        zipCode,
+      );
 
   @override
   String toString() => 'BuyerInfo(id: $id, name: $fullName, email: $email)';

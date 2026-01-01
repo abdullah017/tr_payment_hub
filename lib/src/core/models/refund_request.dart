@@ -49,16 +49,16 @@ class RefundRequest {
 
   /// Creates a [RefundRequest] instance from a JSON map.
   factory RefundRequest.fromJson(Map<String, dynamic> json) => RefundRequest(
-    transactionId: json['transactionId'] as String,
-    amount: (json['amount'] as num).toDouble(),
-    currency: Currency.values.firstWhere(
-      (e) => e.name == json['currency'],
-      orElse: () => Currency.tryLira,
-    ),
-    ip: json['ip'] as String?,
-    reason: json['reason'] as String?,
-    metadata: json['metadata'] as Map<String, dynamic>?,
-  );
+        transactionId: json['transactionId'] as String,
+        amount: (json['amount'] as num).toDouble(),
+        currency: Currency.values.firstWhere(
+          (e) => e.name == json['currency'],
+          orElse: () => Currency.tryLira,
+        ),
+        ip: json['ip'] as String?,
+        reason: json['reason'] as String?,
+        metadata: json['metadata'] as Map<String, dynamic>?,
+      );
 
   /// The transaction ID of the original payment.
   ///
@@ -97,13 +97,13 @@ class RefundRequest {
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-    'transactionId': transactionId,
-    'amount': amount,
-    'currency': currency.name,
-    if (ip != null) 'ip': ip,
-    if (reason != null) 'reason': reason,
-    if (metadata != null) 'metadata': metadata,
-  };
+        'transactionId': transactionId,
+        'amount': amount,
+        'currency': currency.name,
+        if (ip != null) 'ip': ip,
+        if (reason != null) 'reason': reason,
+        if (metadata != null) 'metadata': metadata,
+      };
 
   /// Creates a copy of this instance with the given fields replaced.
   RefundRequest copyWith({
@@ -113,14 +113,15 @@ class RefundRequest {
     String? ip,
     String? reason,
     Map<String, dynamic>? metadata,
-  }) => RefundRequest(
-    transactionId: transactionId ?? this.transactionId,
-    amount: amount ?? this.amount,
-    currency: currency ?? this.currency,
-    ip: ip ?? this.ip,
-    reason: reason ?? this.reason,
-    metadata: metadata ?? this.metadata,
-  );
+  }) =>
+      RefundRequest(
+        transactionId: transactionId ?? this.transactionId,
+        amount: amount ?? this.amount,
+        currency: currency ?? this.currency,
+        ip: ip ?? this.ip,
+        reason: reason ?? this.reason,
+        metadata: metadata ?? this.metadata,
+      );
 
   @override
   bool operator ==(Object other) =>

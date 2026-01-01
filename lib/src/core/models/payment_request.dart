@@ -30,12 +30,12 @@ class AddressInfo {
 
   /// Creates an [AddressInfo] from a JSON map.
   factory AddressInfo.fromJson(Map<String, dynamic> json) => AddressInfo(
-    contactName: json['contactName'] as String,
-    city: json['city'] as String,
-    country: json['country'] as String,
-    address: json['address'] as String,
-    zipCode: json['zipCode'] as String?,
-  );
+        contactName: json['contactName'] as String,
+        city: json['city'] as String,
+        country: json['country'] as String,
+        address: json['address'] as String,
+        zipCode: json['zipCode'] as String?,
+      );
 
   /// Contact name for this address.
   final String contactName;
@@ -54,12 +54,12 @@ class AddressInfo {
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-    'contactName': contactName,
-    'city': city,
-    'country': country,
-    'address': address,
-    if (zipCode != null) 'zipCode': zipCode,
-  };
+        'contactName': contactName,
+        'city': city,
+        'country': country,
+        'address': address,
+        if (zipCode != null) 'zipCode': zipCode,
+      };
 
   @override
   bool operator ==(Object other) =>
@@ -223,21 +223,22 @@ class PaymentRequest {
     String? callbackUrl,
     bool? use3DS,
     Map<String, dynamic>? metadata,
-  }) => PaymentRequest(
-    orderId: orderId ?? this.orderId,
-    amount: amount ?? this.amount,
-    paidPrice: paidPrice ?? this.paidPrice,
-    currency: currency ?? this.currency,
-    installment: installment ?? this.installment,
-    card: card ?? this.card,
-    buyer: buyer ?? this.buyer,
-    basketItems: basketItems ?? this.basketItems,
-    shippingAddress: shippingAddress ?? this.shippingAddress,
-    billingAddress: billingAddress ?? this.billingAddress,
-    callbackUrl: callbackUrl ?? this.callbackUrl,
-    use3DS: use3DS ?? this.use3DS,
-    metadata: metadata ?? this.metadata,
-  );
+  }) =>
+      PaymentRequest(
+        orderId: orderId ?? this.orderId,
+        amount: amount ?? this.amount,
+        paidPrice: paidPrice ?? this.paidPrice,
+        currency: currency ?? this.currency,
+        installment: installment ?? this.installment,
+        card: card ?? this.card,
+        buyer: buyer ?? this.buyer,
+        basketItems: basketItems ?? this.basketItems,
+        shippingAddress: shippingAddress ?? this.shippingAddress,
+        billingAddress: billingAddress ?? this.billingAddress,
+        callbackUrl: callbackUrl ?? this.callbackUrl,
+        use3DS: use3DS ?? this.use3DS,
+        metadata: metadata ?? this.metadata,
+      );
 
   @override
   String toString() =>

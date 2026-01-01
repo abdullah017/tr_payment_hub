@@ -513,45 +513,45 @@ void main() {
 }
 
 PaymentRequest _createTestRequest() => const PaymentRequest(
-  orderId: 'ORDER_123',
-  amount: 100,
-  card: CardInfo(
-    cardHolderName: 'John Doe',
-    cardNumber: '5528790000000008',
-    expireMonth: '12',
-    expireYear: '2030',
-    cvc: '123',
-  ),
-  buyer: BuyerInfo(
-    id: 'BUYER_123',
-    name: 'John',
-    surname: 'Doe',
-    email: 'john@example.com',
-    phone: '+905551234567',
-    ip: '127.0.0.1',
-    city: 'Istanbul',
-    country: 'Turkey',
-    address: 'Test Address',
-  ),
-  basketItems: [
-    BasketItem(
-      id: 'ITEM_1',
-      name: 'Test Product',
-      category: 'Electronics',
-      price: 100,
-      itemType: ItemType.physical,
-    ),
-  ],
-);
+      orderId: 'ORDER_123',
+      amount: 100,
+      card: CardInfo(
+        cardHolderName: 'John Doe',
+        cardNumber: '5528790000000008',
+        expireMonth: '12',
+        expireYear: '2030',
+        cvc: '123',
+      ),
+      buyer: BuyerInfo(
+        id: 'BUYER_123',
+        name: 'John',
+        surname: 'Doe',
+        email: 'john@example.com',
+        phone: '+905551234567',
+        ip: '127.0.0.1',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Test Address',
+      ),
+      basketItems: [
+        BasketItem(
+          id: 'ITEM_1',
+          name: 'Test Product',
+          category: 'Electronics',
+          price: 100,
+          itemType: ItemType.physical,
+        ),
+      ],
+    );
 
 BuyerInfo _createTestBuyer() => const BuyerInfo(
-  id: 'BUYER_123',
-  name: 'John',
-  surname: 'Doe',
-  email: 'john@example.com',
-  phone: '+905551234567',
-  ip: '127.0.0.1',
-  city: 'Istanbul',
-  country: 'Turkey',
-  address: 'Test Address',
-);
+      id: 'BUYER_123',
+      name: 'John',
+      surname: 'Doe',
+      email: 'john@example.com',
+      phone: '+905551234567',
+      ip: '127.0.0.1',
+      city: 'Istanbul',
+      country: 'Turkey',
+      address: 'Test Address',
+    );

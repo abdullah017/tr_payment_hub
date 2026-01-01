@@ -47,22 +47,22 @@ class SavedCard {
 
   /// Creates a [SavedCard] from a JSON map.
   factory SavedCard.fromJson(Map<String, dynamic> json) => SavedCard(
-    cardToken: json['cardToken'] as String,
-    cardUserKey: json['cardUserKey'] as String?,
-    lastFourDigits: json['lastFourDigits'] as String,
-    cardAssociation: json['cardAssociation'] != null
-        ? CardAssociation.values.firstWhere(
-            (e) => e.name == json['cardAssociation'],
-            orElse: () => CardAssociation.visa,
-          )
-        : null,
-    cardFamily: json['cardFamily'] as String?,
-    cardAlias: json['cardAlias'] as String?,
-    binNumber: json['binNumber'] as String?,
-    bankName: json['bankName'] as String?,
-    expiryMonth: json['expiryMonth'] as String?,
-    expiryYear: json['expiryYear'] as String?,
-  );
+        cardToken: json['cardToken'] as String,
+        cardUserKey: json['cardUserKey'] as String?,
+        lastFourDigits: json['lastFourDigits'] as String,
+        cardAssociation: json['cardAssociation'] != null
+            ? CardAssociation.values.firstWhere(
+                (e) => e.name == json['cardAssociation'],
+                orElse: () => CardAssociation.visa,
+              )
+            : null,
+        cardFamily: json['cardFamily'] as String?,
+        cardAlias: json['cardAlias'] as String?,
+        binNumber: json['binNumber'] as String?,
+        bankName: json['bankName'] as String?,
+        expiryMonth: json['expiryMonth'] as String?,
+        expiryYear: json['expiryYear'] as String?,
+      );
 
   /// Unique token for this saved card.
   ///
@@ -122,17 +122,17 @@ class SavedCard {
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-    'cardToken': cardToken,
-    if (cardUserKey != null) 'cardUserKey': cardUserKey,
-    'lastFourDigits': lastFourDigits,
-    if (cardAssociation != null) 'cardAssociation': cardAssociation!.name,
-    if (cardFamily != null) 'cardFamily': cardFamily,
-    if (cardAlias != null) 'cardAlias': cardAlias,
-    if (binNumber != null) 'binNumber': binNumber,
-    if (bankName != null) 'bankName': bankName,
-    if (expiryMonth != null) 'expiryMonth': expiryMonth,
-    if (expiryYear != null) 'expiryYear': expiryYear,
-  };
+        'cardToken': cardToken,
+        if (cardUserKey != null) 'cardUserKey': cardUserKey,
+        'lastFourDigits': lastFourDigits,
+        if (cardAssociation != null) 'cardAssociation': cardAssociation!.name,
+        if (cardFamily != null) 'cardFamily': cardFamily,
+        if (cardAlias != null) 'cardAlias': cardAlias,
+        if (binNumber != null) 'binNumber': binNumber,
+        if (bankName != null) 'bankName': bankName,
+        if (expiryMonth != null) 'expiryMonth': expiryMonth,
+        if (expiryYear != null) 'expiryYear': expiryYear,
+      };
 
   /// Creates a copy with the specified fields replaced.
   SavedCard copyWith({
@@ -146,18 +146,19 @@ class SavedCard {
     String? bankName,
     String? expiryMonth,
     String? expiryYear,
-  }) => SavedCard(
-    cardToken: cardToken ?? this.cardToken,
-    cardUserKey: cardUserKey ?? this.cardUserKey,
-    lastFourDigits: lastFourDigits ?? this.lastFourDigits,
-    cardAssociation: cardAssociation ?? this.cardAssociation,
-    cardFamily: cardFamily ?? this.cardFamily,
-    cardAlias: cardAlias ?? this.cardAlias,
-    binNumber: binNumber ?? this.binNumber,
-    bankName: bankName ?? this.bankName,
-    expiryMonth: expiryMonth ?? this.expiryMonth,
-    expiryYear: expiryYear ?? this.expiryYear,
-  );
+  }) =>
+      SavedCard(
+        cardToken: cardToken ?? this.cardToken,
+        cardUserKey: cardUserKey ?? this.cardUserKey,
+        lastFourDigits: lastFourDigits ?? this.lastFourDigits,
+        cardAssociation: cardAssociation ?? this.cardAssociation,
+        cardFamily: cardFamily ?? this.cardFamily,
+        cardAlias: cardAlias ?? this.cardAlias,
+        binNumber: binNumber ?? this.binNumber,
+        bankName: bankName ?? this.bankName,
+        expiryMonth: expiryMonth ?? this.expiryMonth,
+        expiryYear: expiryYear ?? this.expiryYear,
+      );
 
   @override
   bool operator ==(Object other) =>

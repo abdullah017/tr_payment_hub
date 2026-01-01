@@ -64,34 +64,36 @@ class PaymentResult {
     String? cardToken,
     String? cardUserKey,
     Map<String, dynamic>? rawResponse,
-  }) => PaymentResult(
-    isSuccess: true,
-    transactionId: transactionId,
-    paymentId: paymentId,
-    amount: amount,
-    paidAmount: paidAmount ?? amount,
-    installment: installment,
-    cardType: cardType,
-    cardAssociation: cardAssociation,
-    cardFamily: cardFamily,
-    binNumber: binNumber,
-    lastFourDigits: lastFourDigits,
-    cardToken: cardToken,
-    cardUserKey: cardUserKey,
-    rawResponse: rawResponse,
-  );
+  }) =>
+      PaymentResult(
+        isSuccess: true,
+        transactionId: transactionId,
+        paymentId: paymentId,
+        amount: amount,
+        paidAmount: paidAmount ?? amount,
+        installment: installment,
+        cardType: cardType,
+        cardAssociation: cardAssociation,
+        cardFamily: cardFamily,
+        binNumber: binNumber,
+        lastFourDigits: lastFourDigits,
+        cardToken: cardToken,
+        cardUserKey: cardUserKey,
+        rawResponse: rawResponse,
+      );
 
   /// Creates a failed payment result.
   factory PaymentResult.failure({
     required String errorCode,
     required String errorMessage,
     Map<String, dynamic>? rawResponse,
-  }) => PaymentResult(
-    isSuccess: false,
-    errorCode: errorCode,
-    errorMessage: errorMessage,
-    rawResponse: rawResponse,
-  );
+  }) =>
+      PaymentResult(
+        isSuccess: false,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+        rawResponse: rawResponse,
+      );
 
   /// Whether the payment was successful.
   final bool isSuccess;
@@ -185,21 +187,23 @@ class RefundResult {
   factory RefundResult.success({
     required String refundId,
     required double refundedAmount,
-  }) => RefundResult(
-    isSuccess: true,
-    refundId: refundId,
-    refundedAmount: refundedAmount,
-  );
+  }) =>
+      RefundResult(
+        isSuccess: true,
+        refundId: refundId,
+        refundedAmount: refundedAmount,
+      );
 
   /// Creates a failed refund result.
   factory RefundResult.failure({
     required String errorCode,
     required String errorMessage,
-  }) => RefundResult(
-    isSuccess: false,
-    errorCode: errorCode,
-    errorMessage: errorMessage,
-  );
+  }) =>
+      RefundResult(
+        isSuccess: false,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      );
 
   /// Whether the refund was successful.
   final bool isSuccess;

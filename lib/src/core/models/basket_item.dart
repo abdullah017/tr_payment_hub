@@ -44,16 +44,16 @@ class BasketItem {
   ///
   /// Throws [TypeError] if required fields are missing or have wrong types.
   factory BasketItem.fromJson(Map<String, dynamic> json) => BasketItem(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    category: json['category'] as String,
-    price: (json['price'] as num).toDouble(),
-    itemType: ItemType.values.firstWhere(
-      (e) => e.name == json['itemType'],
-      orElse: () => ItemType.physical,
-    ),
-    quantity: (json['quantity'] as num?)?.toInt() ?? 1,
-  );
+        id: json['id'] as String,
+        name: json['name'] as String,
+        category: json['category'] as String,
+        price: (json['price'] as num).toDouble(),
+        itemType: ItemType.values.firstWhere(
+          (e) => e.name == json['itemType'],
+          orElse: () => ItemType.physical,
+        ),
+        quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      );
 
   /// Unique identifier for this item in your inventory.
   ///
@@ -95,13 +95,13 @@ class BasketItem {
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'category': category,
-    'price': price,
-    'itemType': itemType.name,
-    'quantity': quantity,
-  };
+        'id': id,
+        'name': name,
+        'category': category,
+        'price': price,
+        'itemType': itemType.name,
+        'quantity': quantity,
+      };
 
   /// Creates a copy of this instance with the given fields replaced.
   BasketItem copyWith({
@@ -111,14 +111,15 @@ class BasketItem {
     double? price,
     ItemType? itemType,
     int? quantity,
-  }) => BasketItem(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    category: category ?? this.category,
-    price: price ?? this.price,
-    itemType: itemType ?? this.itemType,
-    quantity: quantity ?? this.quantity,
-  );
+  }) =>
+      BasketItem(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        category: category ?? this.category,
+        price: price ?? this.price,
+        itemType: itemType ?? this.itemType,
+        quantity: quantity ?? this.quantity,
+      );
 
   @override
   bool operator ==(Object other) =>

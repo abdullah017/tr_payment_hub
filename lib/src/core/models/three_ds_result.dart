@@ -53,22 +53,24 @@ class ThreeDSInitResult {
     String? htmlContent,
     String? redirectUrl,
     String? transactionId,
-  }) => ThreeDSInitResult(
-    status: ThreeDSStatus.pending,
-    htmlContent: htmlContent,
-    redirectUrl: redirectUrl,
-    transactionId: transactionId,
-  );
+  }) =>
+      ThreeDSInitResult(
+        status: ThreeDSStatus.pending,
+        htmlContent: htmlContent,
+        redirectUrl: redirectUrl,
+        transactionId: transactionId,
+      );
 
   /// Creates a failed result.
   factory ThreeDSInitResult.failed({
     required String errorCode,
     required String errorMessage,
-  }) => ThreeDSInitResult(
-    status: ThreeDSStatus.failed,
-    errorCode: errorCode,
-    errorMessage: errorMessage,
-  );
+  }) =>
+      ThreeDSInitResult(
+        status: ThreeDSStatus.failed,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      );
 
   /// Creates a result indicating 3DS is not required.
   factory ThreeDSInitResult.notRequired() =>

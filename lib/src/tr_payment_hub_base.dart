@@ -46,11 +46,12 @@ class TrPaymentHub {
     bool shouldSucceed = true,
     Duration delay = const Duration(milliseconds: 500),
     PaymentException? customError,
-  }) => MockPaymentProvider(
-    shouldSucceed: shouldSucceed,
-    delay: delay,
-    customError: customError,
-  );
+  }) =>
+      MockPaymentProvider(
+        shouldSucceed: shouldSucceed,
+        delay: delay,
+        customError: customError,
+      );
 
   /// Kütüphane versiyonu
   static const String version = '0.1.0';

@@ -20,29 +20,30 @@ class SipayMapper {
     required String merchantKey,
     required String invoiceId,
     required String hashKey,
-  }) => {
-    'cc_holder_name': request.card.cardHolderName,
-    'cc_no': request.card.cardNumber,
-    'expiry_month': request.card.expireMonth,
-    'expiry_year': request.card.expireYear,
-    'cvv': request.card.cvc,
-    'currency_code': _mapCurrency(request.currency),
-    'installments_number': request.installment,
-    'invoice_id': invoiceId,
-    'invoice_description': request.orderId,
-    'name': request.buyer.name,
-    'surname': request.buyer.surname,
-    'total': request.effectivePaidAmount.toStringAsFixed(2),
-    'merchant_key': merchantKey,
-    'hash_key': hashKey,
-    'items': _mapBasketItems(request),
-    'bill_address1': request.buyer.address,
-    'bill_city': request.buyer.city,
-    'bill_country': request.buyer.country,
-    'bill_email': request.buyer.email,
-    'bill_phone': request.buyer.phone,
-    'ip': request.buyer.ip,
-  };
+  }) =>
+      {
+        'cc_holder_name': request.card.cardHolderName,
+        'cc_no': request.card.cardNumber,
+        'expiry_month': request.card.expireMonth,
+        'expiry_year': request.card.expireYear,
+        'cvv': request.card.cvc,
+        'currency_code': _mapCurrency(request.currency),
+        'installments_number': request.installment,
+        'invoice_id': invoiceId,
+        'invoice_description': request.orderId,
+        'name': request.buyer.name,
+        'surname': request.buyer.surname,
+        'total': request.effectivePaidAmount.toStringAsFixed(2),
+        'merchant_key': merchantKey,
+        'hash_key': hashKey,
+        'items': _mapBasketItems(request),
+        'bill_address1': request.buyer.address,
+        'bill_city': request.buyer.city,
+        'bill_country': request.buyer.country,
+        'bill_email': request.buyer.email,
+        'bill_phone': request.buyer.phone,
+        'ip': request.buyer.ip,
+      };
 
   /// 3DS ödeme isteği oluştur
   static Map<String, dynamic> to3DSPaymentRequest({
@@ -70,12 +71,13 @@ class SipayMapper {
     required double amount,
     required String currencyCode,
     required String merchantKey,
-  }) => {
-    'credit_card': creditCard,
-    'amount': amount.toStringAsFixed(2),
-    'currency_code': currencyCode,
-    'merchant_key': merchantKey,
-  };
+  }) =>
+      {
+        'credit_card': creditCard,
+        'amount': amount.toStringAsFixed(2),
+        'currency_code': currencyCode,
+        'merchant_key': merchantKey,
+      };
 
   /// İade isteği
   static Map<String, dynamic> toRefundRequest({
@@ -83,18 +85,20 @@ class SipayMapper {
     required double amount,
     required String merchantKey,
     required String hashKey,
-  }) => {
-    'invoice_id': invoiceId,
-    'amount': amount.toStringAsFixed(2),
-    'merchant_key': merchantKey,
-    'hash_key': hashKey,
-  };
+  }) =>
+      {
+        'invoice_id': invoiceId,
+        'amount': amount.toStringAsFixed(2),
+        'merchant_key': merchantKey,
+        'hash_key': hashKey,
+      };
 
   /// Status sorgulama isteği
   static Map<String, dynamic> toStatusRequest({
     required String invoiceId,
     required String merchantKey,
-  }) => {'invoice_id': invoiceId, 'merchant_key': merchantKey};
+  }) =>
+      {'invoice_id': invoiceId, 'merchant_key': merchantKey};
 
   /// Kayıtlı kart ile ödeme isteği
   static Map<String, dynamic> toSavedCardPaymentRequest({
@@ -105,15 +109,16 @@ class SipayMapper {
     required String hashKey,
     required String currency,
     int installment = 1,
-  }) => {
-    'card_token': cardToken,
-    'invoice_id': invoiceId,
-    'total': amount.toStringAsFixed(2),
-    'currency_code': currency,
-    'installments_number': installment,
-    'merchant_key': merchantKey,
-    'hash_key': hashKey,
-  };
+  }) =>
+      {
+        'card_token': cardToken,
+        'invoice_id': invoiceId,
+        'total': amount.toStringAsFixed(2),
+        'currency_code': currency,
+        'installments_number': installment,
+        'merchant_key': merchantKey,
+        'hash_key': hashKey,
+      };
 
   // ============================================
   // RESPONSE MAPPERS
@@ -125,8 +130,7 @@ class SipayMapper {
 
     if (SipayErrorMapper.isSuccess(statusCode)) {
       return PaymentResult.success(
-        transactionId:
-            response['order_id']?.toString() ??
+        transactionId: response['order_id']?.toString() ??
             response['invoice_id']?.toString() ??
             '',
         paymentId: response['transaction_id']?.toString(),
@@ -142,8 +146,7 @@ class SipayMapper {
     } else {
       return PaymentResult.failure(
         errorCode: response['status_code']?.toString() ?? 'unknown',
-        errorMessage:
-            response['status_description']?.toString() ??
+        errorMessage: response['status_description']?.toString() ??
             response['message']?.toString() ??
             'Bilinmeyen hata',
         rawResponse: response,
@@ -156,23 +159,20 @@ class SipayMapper {
     final statusCode = response['status_code'] as int?;
 
     if (SipayErrorMapper.isSuccess(statusCode)) {
-      final redirectUrl =
-          response['redirect_url']?.toString() ??
+      final redirectUrl = response['redirect_url']?.toString() ??
           response['payment_url']?.toString();
       final htmlContent = response['html_content']?.toString();
 
       return ThreeDSInitResult.pending(
         redirectUrl: redirectUrl,
         htmlContent: htmlContent,
-        transactionId:
-            response['order_id']?.toString() ??
+        transactionId: response['order_id']?.toString() ??
             response['invoice_id']?.toString(),
       );
     } else {
       return ThreeDSInitResult.failed(
         errorCode: response['status_code']?.toString() ?? 'unknown',
-        errorMessage:
-            response['status_description']?.toString() ??
+        errorMessage: response['status_description']?.toString() ??
             response['message']?.toString() ??
             'Bilinmeyen hata',
       );
@@ -185,8 +185,7 @@ class SipayMapper {
 
     if (SipayErrorMapper.isSuccess(statusCode)) {
       return RefundResult.success(
-        refundId:
-            response['refund_id']?.toString() ??
+        refundId: response['refund_id']?.toString() ??
             response['invoice_id']?.toString() ??
             '',
         refundedAmount: _parseDouble(response['amount']) ?? 0,
@@ -194,8 +193,7 @@ class SipayMapper {
     } else {
       return RefundResult.failure(
         errorCode: response['status_code']?.toString() ?? 'unknown',
-        errorMessage:
-            response['status_description']?.toString() ??
+        errorMessage: response['status_description']?.toString() ??
             response['message']?.toString() ??
             'Bilinmeyen hata',
       );
@@ -255,9 +253,8 @@ class SipayMapper {
       price: amount,
       cardType:
           SipayErrorMapper.parseCardType(response['card_type']?.toString()) ??
-          CardType.creditCard,
-      cardAssociation:
-          SipayErrorMapper.parseCardAssociation(
+              CardType.creditCard,
+      cardAssociation: SipayErrorMapper.parseCardAssociation(
             response['card_program']?.toString(),
           ) ??
           _detectCardAssociation(binNumber),

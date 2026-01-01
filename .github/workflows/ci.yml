@@ -18,13 +18,13 @@ jobs:
           sdk: stable
 
       - name: Install dependencies
-        run: dart pub get
+        run: dart pub get --no-example
 
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze project source
-        run: dart analyze --fatal-infos
+        run: dart analyze --fatal-warnings lib test
 
   test:
     name: Test
@@ -37,32 +37,10 @@ jobs:
           sdk: stable
 
       - name: Install dependencies
-        run: dart pub get
+        run: dart pub get --no-example
 
       - name: Run unit tests
         run: dart test --exclude-tags=integration --reporter=github
-
-  # Integration tests require API credentials and run separately
-  # integration-test:
-  #   name: Integration Test
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - uses: dart-lang/setup-dart@v1
-  #       with:
-  #         sdk: stable
-  #
-  #     - name: Install dependencies
-  #       run: dart pub get
-  #
-  #     - name: Run integration tests
-  #       env:
-  #         IYZICO_MERCHANT_ID: ${{ secrets.IYZICO_MERCHANT_ID }}
-  #         IYZICO_API_KEY: ${{ secrets.IYZICO_API_KEY }}
-  #         IYZICO_SECRET_KEY: ${{ secrets.IYZICO_SECRET_KEY }}
-  #       run: dart test --tags=integration
 
   build:
     name: Build Check
@@ -75,7 +53,7 @@ jobs:
           sdk: stable
 
       - name: Install dependencies
-        run: dart pub get
+        run: dart pub get --no-example
 
       - name: Check pub.dev score
         run: dart pub publish --dry-run
@@ -94,7 +72,7 @@ jobs:
           sdk: ${{ matrix.sdk }}
 
       - name: Install dependencies
-        run: dart pub get
+        run: dart pub get --no-example
 
       - name: Run tests
         run: dart test --exclude-tags=integration

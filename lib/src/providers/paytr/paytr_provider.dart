@@ -322,18 +322,19 @@ class PayTRProvider implements PaymentProvider {
   InstallmentInfo _generateDefaultInstallmentInfo(
     String binNumber,
     double amount,
-  ) => InstallmentInfo(
-    binNumber: binNumber,
-    price: amount,
-    cardType: CardType.creditCard,
-    cardAssociation: CardAssociation.visa,
-    cardFamily: 'Unknown',
-    bankName: 'Unknown',
-    bankCode: 0,
-    force3DS: true,
-    forceCVC: true,
-    options: _generateDefaultInstallmentOptions(amount),
-  );
+  ) =>
+      InstallmentInfo(
+        binNumber: binNumber,
+        price: amount,
+        cardType: CardType.creditCard,
+        cardAssociation: CardAssociation.visa,
+        cardFamily: 'Unknown',
+        bankName: 'Unknown',
+        bankCode: 0,
+        force3DS: true,
+        forceCVC: true,
+        options: _generateDefaultInstallmentOptions(amount),
+      );
 
   @override
   Future<PaymentStatus> getPaymentStatus(String transactionId) async {
@@ -451,37 +452,37 @@ class PayTRProvider implements PaymentProvider {
   }
 
   List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) => [
-    InstallmentOption(
-      installmentNumber: 1,
-      installmentPrice: amount,
-      totalPrice: amount,
-    ),
-    InstallmentOption(
-      installmentNumber: 2,
-      installmentPrice: amount / 2 * 1.02,
-      totalPrice: amount * 1.02,
-    ),
-    InstallmentOption(
-      installmentNumber: 3,
-      installmentPrice: amount / 3 * 1.03,
-      totalPrice: amount * 1.03,
-    ),
-    InstallmentOption(
-      installmentNumber: 6,
-      installmentPrice: amount / 6 * 1.05,
-      totalPrice: amount * 1.05,
-    ),
-    InstallmentOption(
-      installmentNumber: 9,
-      installmentPrice: amount / 9 * 1.07,
-      totalPrice: amount * 1.07,
-    ),
-    InstallmentOption(
-      installmentNumber: 12,
-      installmentPrice: amount / 12 * 1.10,
-      totalPrice: amount * 1.10,
-    ),
-  ];
+        InstallmentOption(
+          installmentNumber: 1,
+          installmentPrice: amount,
+          totalPrice: amount,
+        ),
+        InstallmentOption(
+          installmentNumber: 2,
+          installmentPrice: amount / 2 * 1.02,
+          totalPrice: amount * 1.02,
+        ),
+        InstallmentOption(
+          installmentNumber: 3,
+          installmentPrice: amount / 3 * 1.03,
+          totalPrice: amount * 1.03,
+        ),
+        InstallmentOption(
+          installmentNumber: 6,
+          installmentPrice: amount / 6 * 1.05,
+          totalPrice: amount * 1.05,
+        ),
+        InstallmentOption(
+          installmentNumber: 9,
+          installmentPrice: amount / 9 * 1.07,
+          totalPrice: amount * 1.07,
+        ),
+        InstallmentOption(
+          installmentNumber: 12,
+          installmentPrice: amount / 12 * 1.10,
+          totalPrice: amount * 1.10,
+        ),
+      ];
 
   Future<Map<String, dynamic>> _postForm(
     String endpoint,

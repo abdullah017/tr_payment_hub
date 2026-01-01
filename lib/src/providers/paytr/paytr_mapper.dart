@@ -19,33 +19,34 @@ class PayTRMapper {
     required String successUrl,
     required String failUrl,
     required bool testMode,
-  }) => {
-    'merchant_id': merchantId,
-    'merchant_oid': merchantOid,
-    'email': request.buyer.email,
-    'payment_amount': _formatAmount(request.effectivePaidAmount),
-    'payment_type': 'card',
-    'installment_count': request.installment.toString(),
-    'currency': _mapCurrency(request.currency),
-    'test_mode': testMode ? '1' : '0',
-    'non_3d': request.use3DS ? '0' : '1',
-    'merchant_ok_url': successUrl,
-    'merchant_fail_url': failUrl,
-    'user_name': request.buyer.fullName,
-    'user_address': request.buyer.address,
-    'user_phone': request.buyer.phone,
-    'user_ip': request.buyer.ip,
-    'user_basket': _encodeBasket(request.basketItems),
-    'cc_owner': request.card.cardHolderName,
-    'card_number': request.card.cardNumber,
-    'expiry_month': request.card.expireMonth,
-    'expiry_year': request.card.expireYear.length == 4
-        ? request.card.expireYear.substring(2)
-        : request.card.expireYear,
-    'cvv': request.card.cvc,
-    'paytr_token': paytrToken,
-    'debug_on': '1',
-  };
+  }) =>
+      {
+        'merchant_id': merchantId,
+        'merchant_oid': merchantOid,
+        'email': request.buyer.email,
+        'payment_amount': _formatAmount(request.effectivePaidAmount),
+        'payment_type': 'card',
+        'installment_count': request.installment.toString(),
+        'currency': _mapCurrency(request.currency),
+        'test_mode': testMode ? '1' : '0',
+        'non_3d': request.use3DS ? '0' : '1',
+        'merchant_ok_url': successUrl,
+        'merchant_fail_url': failUrl,
+        'user_name': request.buyer.fullName,
+        'user_address': request.buyer.address,
+        'user_phone': request.buyer.phone,
+        'user_ip': request.buyer.ip,
+        'user_basket': _encodeBasket(request.basketItems),
+        'cc_owner': request.card.cardHolderName,
+        'card_number': request.card.cardNumber,
+        'expiry_month': request.card.expireMonth,
+        'expiry_year': request.card.expireYear.length == 4
+            ? request.card.expireYear.substring(2)
+            : request.card.expireYear,
+        'cvv': request.card.cvc,
+        'paytr_token': paytrToken,
+        'debug_on': '1',
+      };
 
   /// iFrame token isteği için map
   static Map<String, String> toIframeTokenRequest({
@@ -58,25 +59,26 @@ class PayTRMapper {
     required String callbackUrl,
     required bool testMode,
     int maxInstallment = 12,
-  }) => {
-    'merchant_id': merchantId,
-    'merchant_oid': merchantOid,
-    'email': request.buyer.email,
-    'payment_amount': _formatAmount(request.effectivePaidAmount),
-    'currency': _mapCurrency(request.currency),
-    'test_mode': testMode ? '1' : '0',
-    'merchant_ok_url': successUrl,
-    'merchant_fail_url': failUrl,
-    'user_name': request.buyer.fullName,
-    'user_address': request.buyer.address,
-    'user_phone': request.buyer.phone,
-    'user_ip': request.buyer.ip,
-    'user_basket': _encodeBasket(request.basketItems),
-    'no_installment': request.installment == 1 ? '1' : '0',
-    'max_installment': maxInstallment.toString(),
-    'paytr_token': paytrToken,
-    'debug_on': '1',
-  };
+  }) =>
+      {
+        'merchant_id': merchantId,
+        'merchant_oid': merchantOid,
+        'email': request.buyer.email,
+        'payment_amount': _formatAmount(request.effectivePaidAmount),
+        'currency': _mapCurrency(request.currency),
+        'test_mode': testMode ? '1' : '0',
+        'merchant_ok_url': successUrl,
+        'merchant_fail_url': failUrl,
+        'user_name': request.buyer.fullName,
+        'user_address': request.buyer.address,
+        'user_phone': request.buyer.phone,
+        'user_ip': request.buyer.ip,
+        'user_basket': _encodeBasket(request.basketItems),
+        'no_installment': request.installment == 1 ? '1' : '0',
+        'max_installment': maxInstallment.toString(),
+        'paytr_token': paytrToken,
+        'debug_on': '1',
+      };
 
   /// Refund isteği
   static Map<String, String> toRefundRequest({
@@ -84,23 +86,25 @@ class PayTRMapper {
     required String merchantOid,
     required double amount,
     required String paytrToken,
-  }) => {
-    'merchant_id': merchantId,
-    'merchant_oid': merchantOid,
-    'return_amount': _formatAmount(amount),
-    'paytr_token': paytrToken,
-  };
+  }) =>
+      {
+        'merchant_id': merchantId,
+        'merchant_oid': merchantOid,
+        'return_amount': _formatAmount(amount),
+        'paytr_token': paytrToken,
+      };
 
   /// Status sorgusu
   static Map<String, String> toStatusRequest({
     required String merchantId,
     required String merchantOid,
     required String paytrToken,
-  }) => {
-    'merchant_id': merchantId,
-    'merchant_oid': merchantOid,
-    'paytr_token': paytrToken,
-  };
+  }) =>
+      {
+        'merchant_id': merchantId,
+        'merchant_oid': merchantOid,
+        'paytr_token': paytrToken,
+      };
 
   /// iFrame token response'unu parse et
   static ThreeDSInitResult fromIframeTokenResponse(
@@ -221,11 +225,12 @@ class PayTRMapper {
     required String merchantId,
     required String requestId,
     required String paytrToken,
-  }) => {
-    'merchant_id': merchantId,
-    'request_id': requestId,
-    'paytr_token': paytrToken,
-  };
+  }) =>
+      {
+        'merchant_id': merchantId,
+        'request_id': requestId,
+        'paytr_token': paytrToken,
+      };
 
   /// Taksit oranları response'unu parse et
   ///

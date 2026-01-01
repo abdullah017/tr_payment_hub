@@ -16,8 +16,7 @@ class ParamMapper {
   // ============================================
 
   /// SOAP envelope wrapper
-  static String wrapSoapEnvelope(String body) =>
-      '''
+  static String wrapSoapEnvelope(String body) => '''
 <?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -46,8 +45,7 @@ class ParamMapper {
     final card = request.card;
     final buyer = request.buyer;
 
-    final body =
-        '''
+    final body = '''
 <TP_WMD_Pay xmlns="https://turkpos.com.tr/">
   <G>
     <CLIENT_CODE>$clientCode</CLIENT_CODE>
@@ -100,8 +98,7 @@ class ParamMapper {
     final card = request.card;
     final buyer = request.buyer;
 
-    final body =
-        '''
+    final body = '''
 <TP_WMD_UCD xmlns="https://turkpos.com.tr/">
   <G>
     <CLIENT_CODE>$clientCode</CLIENT_CODE>
@@ -148,8 +145,7 @@ class ParamMapper {
     required String guid,
     required String hash,
   }) {
-    final body =
-        '''
+    final body = '''
 <TP_WMD_Iade xmlns="https://turkpos.com.tr/">
   <G>
     <CLIENT_CODE>$clientCode</CLIENT_CODE>
@@ -174,8 +170,7 @@ class ParamMapper {
     required String clientPassword,
     required String guid,
   }) {
-    final body =
-        '''
+    final body = '''
 <TP_Islem_Sorgulama xmlns="https://turkpos.com.tr/">
   <G>
     <CLIENT_CODE>$clientCode</CLIENT_CODE>
@@ -199,8 +194,7 @@ class ParamMapper {
     required String clientPassword,
     required String guid,
   }) {
-    final body =
-        '''
+    final body = '''
 <TP_Islem_Odeme_WKO xmlns="https://turkpos.com.tr/">
   <G>
     <CLIENT_CODE>$clientCode</CLIENT_CODE>
@@ -236,8 +230,7 @@ class ParamMapper {
     try {
       final doc = XmlDocument.parse(xmlResponse);
 
-      final resultCode =
-          _getElementText(doc, 'Sonuc') ??
+      final resultCode = _getElementText(doc, 'Sonuc') ??
           _getElementText(doc, 'UCD_HTML') ??
           '';
       final resultMessage =
@@ -311,8 +304,7 @@ class ParamMapper {
           _getElementText(doc, 'Sonuc_Str') ?? 'Bilinmeyen sonuc';
 
       if (ParamErrorMapper.isSuccess(resultCode)) {
-        final refundId =
-            _getElementText(doc, 'Dekont_ID') ??
+        final refundId = _getElementText(doc, 'Dekont_ID') ??
             _getElementText(doc, 'Islem_ID');
         return RefundResult.success(
           refundId: refundId ?? '',
@@ -423,9 +415,8 @@ class ParamMapper {
         price: amount,
         cardType:
             ParamErrorMapper.parseCardType(_getElementText(doc, 'Kart_Tip')) ??
-            CardType.creditCard,
-        cardAssociation:
-            ParamErrorMapper.parseCardAssociation(
+                CardType.creditCard,
+        cardAssociation: ParamErrorMapper.parseCardAssociation(
               _getElementText(doc, 'Kart_Marka'),
             ) ??
             CardAssociation.visa,

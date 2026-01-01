@@ -45,13 +45,13 @@ class CardInfo {
   ///
   /// Note: Be cautious when deserializing card data from external sources.
   factory CardInfo.fromJson(Map<String, dynamic> json) => CardInfo(
-    cardHolderName: json['cardHolderName'] as String,
-    cardNumber: json['cardNumber'] as String,
-    expireMonth: json['expireMonth'] as String,
-    expireYear: json['expireYear'] as String,
-    cvc: json['cvc'] as String,
-    saveCard: json['saveCard'] as bool? ?? false,
-  );
+        cardHolderName: json['cardHolderName'] as String,
+        cardNumber: json['cardNumber'] as String,
+        expireMonth: json['expireMonth'] as String,
+        expireYear: json['expireYear'] as String,
+        cvc: json['cvc'] as String,
+        saveCard: json['saveCard'] as bool? ?? false,
+      );
 
   /// Name as printed on the card.
   ///
@@ -138,13 +138,13 @@ class CardInfo {
   /// WARNING: Contains sensitive data. Use only for API calls,
   /// never for logging.
   Map<String, dynamic> toJson() => {
-    'cardHolderName': cardHolderName,
-    'cardNumber': cardNumber,
-    'expireMonth': expireMonth,
-    'expireYear': expireYear,
-    'cvc': cvc,
-    'saveCard': saveCard,
-  };
+        'cardHolderName': cardHolderName,
+        'cardNumber': cardNumber,
+        'expireMonth': expireMonth,
+        'expireYear': expireYear,
+        'cvc': cvc,
+        'saveCard': saveCard,
+      };
 
   /// Creates a copy of this instance with the given fields replaced.
   CardInfo copyWith({
@@ -154,14 +154,15 @@ class CardInfo {
     String? expireYear,
     String? cvc,
     bool? saveCard,
-  }) => CardInfo(
-    cardHolderName: cardHolderName ?? this.cardHolderName,
-    cardNumber: cardNumber ?? this.cardNumber,
-    expireMonth: expireMonth ?? this.expireMonth,
-    expireYear: expireYear ?? this.expireYear,
-    cvc: cvc ?? this.cvc,
-    saveCard: saveCard ?? this.saveCard,
-  );
+  }) =>
+      CardInfo(
+        cardHolderName: cardHolderName ?? this.cardHolderName,
+        cardNumber: cardNumber ?? this.cardNumber,
+        expireMonth: expireMonth ?? this.expireMonth,
+        expireYear: expireYear ?? this.expireYear,
+        cvc: cvc ?? this.cvc,
+        saveCard: saveCard ?? this.saveCard,
+      );
 
   @override
   bool operator ==(Object other) =>
@@ -177,13 +178,13 @@ class CardInfo {
 
   @override
   int get hashCode => Object.hash(
-    cardHolderName,
-    cardNumber,
-    expireMonth,
-    expireYear,
-    cvc,
-    saveCard,
-  );
+        cardHolderName,
+        cardNumber,
+        expireMonth,
+        expireYear,
+        cvc,
+        saveCard,
+      );
 
   @override
   String toString() =>

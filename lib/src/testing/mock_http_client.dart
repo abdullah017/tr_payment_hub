@@ -22,25 +22,26 @@ class PaymentMockClient {
     bool shouldSucceed = true,
     Map<String, dynamic>? customResponse,
     int statusCode = 200,
-  }) => MockClient((request) async {
-    final path = request.url.path;
+  }) =>
+      MockClient((request) async {
+        final path = request.url.path;
 
-    Map<String, dynamic> response;
+        Map<String, dynamic> response;
 
-    if (customResponse != null) {
-      response = customResponse;
-    } else if (shouldSucceed) {
-      response = _iyzicoSuccessResponse(path);
-    } else {
-      response = _iyzicoFailureResponse();
-    }
+        if (customResponse != null) {
+          response = customResponse;
+        } else if (shouldSucceed) {
+          response = _iyzicoSuccessResponse(path);
+        } else {
+          response = _iyzicoFailureResponse();
+        }
 
-    return http.Response(
-      jsonEncode(response),
-      statusCode,
-      headers: {'content-type': 'application/json'},
-    );
-  });
+        return http.Response(
+          jsonEncode(response),
+          statusCode,
+          headers: {'content-type': 'application/json'},
+        );
+      });
 
   static Map<String, dynamic> _iyzicoSuccessResponse(String path) {
     if (path.contains('installment')) {
@@ -108,10 +109,10 @@ class PaymentMockClient {
   }
 
   static Map<String, dynamic> _iyzicoFailureResponse() => {
-    'status': 'failure',
-    'errorCode': '10051',
-    'errorMessage': 'Kart limiti yetersiz, yetersiz bakiye',
-  };
+        'status': 'failure',
+        'errorCode': '10051',
+        'errorMessage': 'Kart limiti yetersiz, yetersiz bakiye',
+      };
 
   // ============================================
   // PAYTR MOCK CLIENT
@@ -122,25 +123,26 @@ class PaymentMockClient {
     bool shouldSucceed = true,
     Map<String, dynamic>? customResponse,
     int statusCode = 200,
-  }) => MockClient((request) async {
-    final path = request.url.path;
+  }) =>
+      MockClient((request) async {
+        final path = request.url.path;
 
-    Map<String, dynamic> response;
+        Map<String, dynamic> response;
 
-    if (customResponse != null) {
-      response = customResponse;
-    } else if (shouldSucceed) {
-      response = _paytrSuccessResponse(path);
-    } else {
-      response = _paytrFailureResponse();
-    }
+        if (customResponse != null) {
+          response = customResponse;
+        } else if (shouldSucceed) {
+          response = _paytrSuccessResponse(path);
+        } else {
+          response = _paytrFailureResponse();
+        }
 
-    return http.Response(
-      jsonEncode(response),
-      statusCode,
-      headers: {'content-type': 'application/json'},
-    );
-  });
+        return http.Response(
+          jsonEncode(response),
+          statusCode,
+          headers: {'content-type': 'application/json'},
+        );
+      });
 
   static Map<String, dynamic> _paytrSuccessResponse(String path) {
     if (path.contains('taksit')) {
@@ -174,9 +176,9 @@ class PaymentMockClient {
   }
 
   static Map<String, dynamic> _paytrFailureResponse() => {
-    'status': 'failed',
-    'reason': 'Yetersiz bakiye',
-  };
+        'status': 'failed',
+        'reason': 'Yetersiz bakiye',
+      };
 
   // ============================================
   // PARAM MOCK CLIENT
@@ -187,25 +189,26 @@ class PaymentMockClient {
     bool shouldSucceed = true,
     String? customResponse,
     int statusCode = 200,
-  }) => MockClient((request) async {
-    final body = request.body;
+  }) =>
+      MockClient((request) async {
+        final body = request.body;
 
-    String response;
+        String response;
 
-    if (customResponse != null) {
-      response = customResponse;
-    } else if (shouldSucceed) {
-      response = _paramSuccessResponse(body);
-    } else {
-      response = _paramFailureResponse();
-    }
+        if (customResponse != null) {
+          response = customResponse;
+        } else if (shouldSucceed) {
+          response = _paramSuccessResponse(body);
+        } else {
+          response = _paramFailureResponse();
+        }
 
-    return http.Response(
-      response,
-      statusCode,
-      headers: {'content-type': 'text/xml; charset=utf-8'},
-    );
-  });
+        return http.Response(
+          response,
+          statusCode,
+          headers: {'content-type': 'text/xml; charset=utf-8'},
+        );
+      });
 
   static String _paramSuccessResponse(String requestBody) {
     if (requestBody.contains('TP_Islem_Iptal_Iade')) {
@@ -285,31 +288,32 @@ class PaymentMockClient {
     bool shouldSucceed = true,
     Map<String, dynamic>? customResponse,
     int statusCode = 200,
-  }) => MockClient((request) async {
-    final path = request.url.path;
+  }) =>
+      MockClient((request) async {
+        final path = request.url.path;
 
-    Map<String, dynamic> response;
+        Map<String, dynamic> response;
 
-    if (customResponse != null) {
-      response = customResponse;
-    } else if (path.contains('token')) {
-      // Token endpoint always succeeds
-      response = {
-        'status_code': 100,
-        'data': {'token': 'MOCK_BEARER_TOKEN_123'},
-      };
-    } else if (shouldSucceed) {
-      response = _sipaySuccessResponse(path);
-    } else {
-      response = _sipayFailureResponse();
-    }
+        if (customResponse != null) {
+          response = customResponse;
+        } else if (path.contains('token')) {
+          // Token endpoint always succeeds
+          response = {
+            'status_code': 100,
+            'data': {'token': 'MOCK_BEARER_TOKEN_123'},
+          };
+        } else if (shouldSucceed) {
+          response = _sipaySuccessResponse(path);
+        } else {
+          response = _sipayFailureResponse();
+        }
 
-    return http.Response(
-      jsonEncode(response),
-      statusCode,
-      headers: {'content-type': 'application/json'},
-    );
-  });
+        return http.Response(
+          jsonEncode(response),
+          statusCode,
+          headers: {'content-type': 'application/json'},
+        );
+      });
 
   static Map<String, dynamic> _sipaySuccessResponse(String path) {
     if (path.contains('installment')) {
@@ -347,10 +351,10 @@ class PaymentMockClient {
   }
 
   static Map<String, dynamic> _sipayFailureResponse() => {
-    'status_code': 0,
-    'status_description': 'Yetersiz bakiye',
-    'error_code': 'insufficient_balance',
-  };
+        'status_code': 0,
+        'status_description': 'Yetersiz bakiye',
+        'error_code': 'insufficient_balance',
+      };
 
   // ============================================
   // GENERIC HELPERS
@@ -360,7 +364,8 @@ class PaymentMockClient {
   static MockClient alwaysFails({
     int statusCode = 500,
     String body = 'Internal Server Error',
-  }) => MockClient((request) async => http.Response(body, statusCode));
+  }) =>
+      MockClient((request) async => http.Response(body, statusCode));
 
   /// Network timeout simüle eden mock client oluşturur
   static MockClient timeout({Duration delay = const Duration(seconds: 35)}) =>
@@ -372,5 +377,6 @@ class PaymentMockClient {
   /// Özel response dönen mock client oluşturur
   static MockClient custom(
     Future<http.Response> Function(http.Request request) handler,
-  ) => MockClient(handler);
+  ) =>
+      MockClient(handler);
 }

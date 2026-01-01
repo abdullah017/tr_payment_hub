@@ -42,9 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README.md with new providers, test cards, and sandbox URLs
 - All providers now support dependency injection for testing
 - Documentation now includes testing instructions
+- **SDK constraint** relaxed from `^3.10.4` to `>=3.0.0 <4.0.0` for wider compatibility
+- Removed deprecated lint rules (`package_api_docs`, `avoid_returning_null_for_future`)
 
 ### Fixed
 - Provider table now correctly shows Param and Sipay as stable
+- CI/CD SDK compatibility issue resolved
 
 ## [1.0.3] - 2025-12-24
 

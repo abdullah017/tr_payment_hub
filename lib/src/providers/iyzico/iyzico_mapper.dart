@@ -24,22 +24,23 @@ class IyzicoMapper {
   static Map<String, dynamic> toPaymentRequest(
     PaymentRequest request,
     String conversationId,
-  ) => {
-    'locale': 'tr',
-    'conversationId': conversationId,
-    'price': request.amount.toString(),
-    'paidPrice': request.effectivePaidAmount.toString(),
-    'currency': _mapCurrency(request.currency),
-    'installment': request.installment,
-    'basketId': request.orderId,
-    'paymentChannel': 'WEB',
-    'paymentGroup': 'PRODUCT',
-    'paymentCard': _mapCard(request.card),
-    'buyer': _mapBuyer(request.buyer),
-    'shippingAddress': _mapAddress(request.buyer, 'shipping'),
-    'billingAddress': _mapAddress(request.buyer, 'billing'),
-    'basketItems': request.basketItems.map(_mapBasketItem).toList(),
-  };
+  ) =>
+      {
+        'locale': 'tr',
+        'conversationId': conversationId,
+        'price': request.amount.toString(),
+        'paidPrice': request.effectivePaidAmount.toString(),
+        'currency': _mapCurrency(request.currency),
+        'installment': request.installment,
+        'basketId': request.orderId,
+        'paymentChannel': 'WEB',
+        'paymentGroup': 'PRODUCT',
+        'paymentCard': _mapCard(request.card),
+        'buyer': _mapBuyer(request.buyer),
+        'shippingAddress': _mapAddress(request.buyer, 'shipping'),
+        'billingAddress': _mapAddress(request.buyer, 'billing'),
+        'basketItems': request.basketItems.map(_mapBasketItem).toList(),
+      };
 
   /// PaymentRequest'i iyzico 3DS formatına çevir
   static Map<String, dynamic> to3DSInitRequest(
@@ -57,26 +58,28 @@ class IyzicoMapper {
     required String binNumber,
     required double price,
     String? conversationId,
-  }) => {
-    'locale': 'tr',
-    'conversationId':
-        conversationId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    'binNumber': binNumber,
-    'price': price.toString(),
-  };
+  }) =>
+      {
+        'locale': 'tr',
+        'conversationId':
+            conversationId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        'binNumber': binNumber,
+        'price': price.toString(),
+      };
 
   /// İade isteği
   static Map<String, dynamic> toRefundRequest(
     RefundRequest request,
     String conversationId,
-  ) => {
-    'locale': 'tr',
-    'conversationId': conversationId,
-    'paymentTransactionId': request.transactionId,
-    'price': request.amount.toString(),
-    'currency': _mapCurrency(request.currency),
-    'ip': request.ip,
-  };
+  ) =>
+      {
+        'locale': 'tr',
+        'conversationId': conversationId,
+        'paymentTransactionId': request.transactionId,
+        'price': request.amount.toString(),
+        'currency': _mapCurrency(request.currency),
+        'ip': request.ip,
+      };
 
   // ============================================
   // RESPONSE MAPPERS
@@ -148,12 +151,11 @@ class IyzicoMapper {
     return InstallmentInfo(
       binNumber: detail['binNumber'] as String?,
       price: _parseDouble(detail['price']) ?? 0,
-      cardType:
-          IyzicoErrorMapper.parseCardType(detail['cardType']) ??
+      cardType: IyzicoErrorMapper.parseCardType(detail['cardType']) ??
           CardType.creditCard,
       cardAssociation:
           IyzicoErrorMapper.parseCardAssociation(detail['cardAssociation']) ??
-          CardAssociation.visa,
+              CardAssociation.visa,
       cardFamily: detail['cardFamilyName'] as String? ?? '',
       bankName: detail['bankName'] as String? ?? '',
       bankCode: detail['bankCode'] as int? ?? 0,
@@ -205,43 +207,43 @@ class IyzicoMapper {
   }
 
   static Map<String, dynamic> _mapCard(CardInfo card) => {
-    'cardHolderName': card.cardHolderName,
-    'cardNumber': card.cardNumber,
-    'expireMonth': card.expireMonth,
-    'expireYear': card.expireYear,
-    'cvc': card.cvc,
-    'registerCard': card.saveCard ? 1 : 0,
-  };
+        'cardHolderName': card.cardHolderName,
+        'cardNumber': card.cardNumber,
+        'expireMonth': card.expireMonth,
+        'expireYear': card.expireYear,
+        'cvc': card.cvc,
+        'registerCard': card.saveCard ? 1 : 0,
+      };
 
   static Map<String, dynamic> _mapBuyer(BuyerInfo buyer) => {
-    'id': buyer.id,
-    'name': buyer.name,
-    'surname': buyer.surname,
-    'email': buyer.email,
-    'gsmNumber': buyer.phone,
-    'identityNumber': buyer.identityNumber ?? '11111111111',
-    'registrationAddress': buyer.address,
-    'city': buyer.city,
-    'country': buyer.country,
-    'zipCode': buyer.zipCode ?? '34000',
-    'ip': buyer.ip,
-  };
+        'id': buyer.id,
+        'name': buyer.name,
+        'surname': buyer.surname,
+        'email': buyer.email,
+        'gsmNumber': buyer.phone,
+        'identityNumber': buyer.identityNumber ?? '11111111111',
+        'registrationAddress': buyer.address,
+        'city': buyer.city,
+        'country': buyer.country,
+        'zipCode': buyer.zipCode ?? '34000',
+        'ip': buyer.ip,
+      };
 
   static Map<String, dynamic> _mapAddress(BuyerInfo buyer, String type) => {
-    'contactName': buyer.fullName,
-    'city': buyer.city,
-    'country': buyer.country,
-    'address': buyer.address,
-    'zipCode': buyer.zipCode ?? '34000',
-  };
+        'contactName': buyer.fullName,
+        'city': buyer.city,
+        'country': buyer.country,
+        'address': buyer.address,
+        'zipCode': buyer.zipCode ?? '34000',
+      };
 
   static Map<String, dynamic> _mapBasketItem(BasketItem item) => {
-    'id': item.id,
-    'name': item.name,
-    'category1': item.category,
-    'itemType': item.itemType == ItemType.physical ? 'PHYSICAL' : 'VIRTUAL',
-    'price': item.price.toString(),
-  };
+        'id': item.id,
+        'name': item.name,
+        'category1': item.category,
+        'itemType': item.itemType == ItemType.physical ? 'PHYSICAL' : 'VIRTUAL',
+        'price': item.price.toString(),
+      };
 
   static String _extractTransactionId(Map<String, dynamic> response) {
     // İlk itemTransaction'dan paymentTransactionId al
@@ -285,47 +287,49 @@ class IyzicoMapper {
     required String conversationId,
     int installment = 1,
     Currency currency = Currency.tryLira,
-  }) => {
-    'locale': 'tr',
-    'conversationId': conversationId,
-    'price': amount.toString(),
-    'paidPrice': amount.toString(),
-    'currency': _mapCurrency(currency),
-    'installment': installment,
-    'basketId': orderId,
-    'paymentChannel': 'WEB',
-    'paymentGroup': 'PRODUCT',
-    'paymentCard': {'cardToken': cardToken, 'cardUserKey': cardUserKey},
-    'buyer': _mapBuyer(buyer),
-    'shippingAddress': _mapAddress(buyer, 'shipping'),
-    'billingAddress': _mapAddress(buyer, 'billing'),
-    'basketItems': [
+  }) =>
       {
-        'id': 'ITEM_$orderId',
-        'name': 'Saved Card Payment',
-        'category1': 'Payment',
-        'itemType': 'VIRTUAL',
+        'locale': 'tr',
+        'conversationId': conversationId,
         'price': amount.toString(),
-      },
-    ],
-  };
+        'paidPrice': amount.toString(),
+        'currency': _mapCurrency(currency),
+        'installment': installment,
+        'basketId': orderId,
+        'paymentChannel': 'WEB',
+        'paymentGroup': 'PRODUCT',
+        'paymentCard': {'cardToken': cardToken, 'cardUserKey': cardUserKey},
+        'buyer': _mapBuyer(buyer),
+        'shippingAddress': _mapAddress(buyer, 'shipping'),
+        'billingAddress': _mapAddress(buyer, 'billing'),
+        'basketItems': [
+          {
+            'id': 'ITEM_$orderId',
+            'name': 'Saved Card Payment',
+            'category1': 'Payment',
+            'itemType': 'VIRTUAL',
+            'price': amount.toString(),
+          },
+        ],
+      };
 
   /// iyzico kart listesi response'unu SavedCard'a dönüştür.
   static SavedCard fromSavedCardResponse(
     Map<String, dynamic> response,
     String cardUserKey,
-  ) => SavedCard(
-    cardToken: response['cardToken']?.toString() ?? '',
-    cardUserKey: cardUserKey,
-    lastFourDigits: response['lastFourDigits']?.toString() ?? '',
-    cardAssociation: IyzicoErrorMapper.parseCardAssociation(
-      response['cardAssociation'],
-    ),
-    cardFamily: response['cardFamily']?.toString(),
-    cardAlias: response['cardAlias']?.toString(),
-    binNumber: response['binNumber']?.toString(),
-    bankName: response['cardBankName']?.toString(),
-    expiryMonth: response['expireMonth']?.toString(),
-    expiryYear: response['expireYear']?.toString(),
-  );
+  ) =>
+      SavedCard(
+        cardToken: response['cardToken']?.toString() ?? '',
+        cardUserKey: cardUserKey,
+        lastFourDigits: response['lastFourDigits']?.toString() ?? '',
+        cardAssociation: IyzicoErrorMapper.parseCardAssociation(
+          response['cardAssociation'],
+        ),
+        cardFamily: response['cardFamily']?.toString(),
+        cardAlias: response['cardAlias']?.toString(),
+        binNumber: response['binNumber']?.toString(),
+        bankName: response['cardBankName']?.toString(),
+        expiryMonth: response['expireMonth']?.toString(),
+        expiryYear: response['expireYear']?.toString(),
+      );
 }

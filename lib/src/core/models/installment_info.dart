@@ -61,10 +61,10 @@ class InstallmentOption {
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-    'installmentNumber': installmentNumber,
-    'installmentPrice': installmentPrice,
-    'totalPrice': totalPrice,
-  };
+        'installmentNumber': installmentNumber,
+        'installmentPrice': installmentPrice,
+        'totalPrice': totalPrice,
+      };
 
   @override
   bool operator ==(Object other) =>
@@ -193,17 +193,17 @@ class InstallmentInfo {
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-    if (binNumber != null) 'binNumber': binNumber,
-    'price': price,
-    'cardType': cardType.name,
-    'cardAssociation': cardAssociation.name,
-    'cardFamily': cardFamily,
-    'bankName': bankName,
-    'bankCode': bankCode,
-    'force3DS': force3DS,
-    'forceCVC': forceCVC,
-    'options': options.map((o) => o.toJson()).toList(),
-  };
+        if (binNumber != null) 'binNumber': binNumber,
+        'price': price,
+        'cardType': cardType.name,
+        'cardAssociation': cardAssociation.name,
+        'cardFamily': cardFamily,
+        'bankName': bankName,
+        'bankCode': bankCode,
+        'force3DS': force3DS,
+        'forceCVC': forceCVC,
+        'options': options.map((o) => o.toJson()).toList(),
+      };
 
   @override
   String toString() =>
