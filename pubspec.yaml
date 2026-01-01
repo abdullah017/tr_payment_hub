@@ -13,7 +13,7 @@ topics:
   - e-commerce
 
 environment:
-  sdk: ^3.10.4
+  sdk: ">=3.0.0 <4.0.0"
 
 # Add regular dependencies here.
 dependencies:
