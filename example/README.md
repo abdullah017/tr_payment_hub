@@ -16,12 +16,13 @@ Realistic Flutter payment integration example.
 
 ## Features
 
-- Provider selection (Mock/iyzico/PayTR)
+- Provider selection (Mock/iyzico/PayTR/Param/Sipay)
 - Card details form
 - 3D Secure toggle
 - WebView for bank verification
 - Callback URL interception
 - Result display
+- HTTP mocking for testing without real API credentials
 
 ## Quick Start
 
@@ -66,11 +67,27 @@ final result = await provider.complete3DSPayment(
 );
 ```
 
-## Test Card
+## Test Cards
 
+### iyzico
 - **Number:** 5528790000000008
 - **Expiry:** 12/30
 - **CVV:** 123
+
+### PayTR
+- **Number:** 4355084355084358
+- **Expiry:** 12/30
+- **CVV:** 000
+
+### Sipay
+- **Number:** 4508034508034509
+- **Expiry:** 12/30
+- **CVV:** 000
+
+### Param
+- **Number:** 4022774022774026
+- **Expiry:** 12/30
+- **CVV:** 000
 
 ## Files
 
@@ -86,3 +103,25 @@ lib/main.dart
 - Uses `MockPaymentProvider` - no real API keys needed
 - Toggle "Use 3D Secure" to test both flows
 - WebView intercepts callback URL and extracts parameters
+
+## Testing with Mock HTTP Client
+
+For unit testing without real API credentials:
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+// Create mock client
+final mockClient = PaymentMockClient.iyzico(shouldSucceed: true);
+final provider = IyzicoProvider(httpClient: mockClient);
+
+// Initialize and use as normal
+await provider.initialize(config);
+final result = await provider.createPayment(request);
+```
+
+Available mock clients:
+- `PaymentMockClient.iyzico()`
+- `PaymentMockClient.paytr()`
+- `PaymentMockClient.param()`
+- `PaymentMockClient.sipay()`

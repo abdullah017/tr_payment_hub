@@ -1,10 +1,17 @@
 /// Desteklenen ödeme sağlayıcıları
 enum ProviderType {
+  /// iyzico ödeme sağlayıcısı
   iyzico,
+
+  /// PayTR ödeme sağlayıcısı
   paytr,
+
+  /// Param POS ödeme sağlayıcısı
+  param,
+
+  /// Sipay ödeme sağlayıcısı
+  sipay,
   // Gelecekte eklenecekler:
-  // param,
-  // sipay,
   // hepsipay,
 }
 

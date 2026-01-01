@@ -1,0 +1,46 @@
+{
+  "status": "success",
+  "bin_number": "552879",
+  "card_type": "CREDIT_CARD",
+  "card_brand": "MASTERCARD",
+  "bank_name": "Garanti BBVA",
+  "bank_code": "62",
+  "installments": [
+    {
+      "installment_count": 1,
+      "installment_amount": 1000.0,
+      "total_amount": 1000.0,
+      "commission_rate": 0.0
+    },
+    {
+      "installment_count": 2,
+      "installment_amount": 510.0,
+      "total_amount": 1020.0,
+      "commission_rate": 2.0
+    },
+    {
+      "installment_count": 3,
+      "installment_amount": 343.33,
+      "total_amount": 1030.0,
+      "commission_rate": 3.0
+    },
+    {
+      "installment_count": 6,
+      "installment_amount": 176.67,
+      "total_amount": 1060.0,
+      "commission_rate": 6.0
+    },
+    {
+      "installment_count": 9,
+      "installment_amount": 120.0,
+      "total_amount": 1080.0,
+      "commission_rate": 8.0
+    },
+    {
+      "installment_count": 12,
+      "installment_amount": 91.67,
+      "total_amount": 1100.0,
+      "commission_rate": 10.0
+    }
+  ]
+}

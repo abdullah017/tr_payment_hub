@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <TP_WMD_UCD_Response xmlns="https://turkpos.com.tr/">
+      <TP_WMD_UCD_Result>
+        <Sonuc>1</Sonuc>
+        <Sonuc_Str>Başarılı</Sonuc_Str>
+        <UCD_URL>https://3dsecure.param.com.tr/</UCD_URL>
+        <UCD_MD>mock_md_value_123456</UCD_MD>
+        <Islem_GUID>a1b2c3d4-e5f6-7890-abcd-ef1234567890</Islem_GUID>
+      </TP_WMD_UCD_Result>
+    </TP_WMD_UCD_Response>
+  </soap:Body>
+</soap:Envelope>

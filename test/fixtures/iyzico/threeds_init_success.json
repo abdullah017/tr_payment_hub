@@ -1,0 +1,8 @@
+{
+  "status": "success",
+  "locale": "tr",
+  "systemTime": 1609459200000,
+  "conversationId": "123456789",
+  "threeDSHtmlContent": "PGh0bWw+CjxoZWFkPgo8L2hlYWQ+Cjxib2R5Pgo8Zm9ybSBpZD0idGhyZWVEc0Zvcm0iIG1ldGhvZD0iUE9TVCIgYWN0aW9uPSJodHRwczovL2V4YW1wbGUuY29tLzNkcyI+CjxpbnB1dCB0eXBlPSJoaWRkZW4iIG5hbWU9InBhcmVxIiB2YWx1ZT0idGVzdCIgLz4KPC9mb3JtPgo8c2NyaXB0PmRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0aHJlZURzRm9ybScpLnN1Ym1pdCgpOzwvc2NyaXB0Pgo8L2JvZHk+CjwvaHRtbD4=",
+  "paymentId": "12345678"
+}

@@ -1,0 +1,8 @@
+{
+  "status_code": 100,
+  "status_description": "3D Secure başlatıldı",
+  "redirect_url": "https://3dsecure.sipay.com.tr/auth?token=mock_3ds_token",
+  "order_id": "ORD123456789",
+  "invoice_id": "SIP1609459200000",
+  "hash_key": "mock_hash_key_value"
+}

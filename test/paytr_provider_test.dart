@@ -414,6 +414,133 @@ void main() {
       expect(invalidConfig.validate(), false);
     });
   });
+
+  group('PayTRAuth Installment Token', () {
+    test('should generate installment token', () {
+      final auth = PayTRAuth(
+        merchantId: '123456',
+        merchantKey: 'testkey',
+        merchantSalt: 'testsalt',
+      );
+
+      final token = auth.generateInstallmentToken(requestId: 'REQ123456');
+
+      expect(token, isNotEmpty);
+      expect(token, isA<String>());
+    });
+  });
+
+  group('PayTRMapper Installment', () {
+    test('should map installment request', () {
+      final request = PayTRMapper.toInstallmentRequest(
+        merchantId: '123456',
+        requestId: 'REQ123',
+        paytrToken: 'test_token',
+      );
+
+      expect(request['merchant_id'], '123456');
+      expect(request['request_id'], 'REQ123');
+      expect(request['paytr_token'], 'test_token');
+    });
+
+    test('should parse installment response with rates', () {
+      final response = {
+        'status': 'success',
+        'request_id': 'REQ123',
+        'max_inst_non_bus': '12',
+        'rates': {
+          'axess': {'1': '0', '2': '2.5', '3': '3.5', '6': '5.0'},
+          'bonus': {'1': '0', '2': '2.0', '3': '3.0'},
+        },
+      };
+
+      final info = PayTRMapper.fromInstallmentResponse(
+        response: response,
+        binNumber: '552879',
+        amount: 1000,
+      );
+
+      expect(info.binNumber, '552879');
+      expect(info.price, 1000.0);
+      expect(info.options, isNotEmpty);
+      expect(info.force3DS, true);
+      // İlk oran tek çekim olmalı (komisyon 0)
+      expect(info.options.first.installmentNumber, 1);
+      expect(info.options.first.totalPrice, 1000.0);
+    });
+
+    test('should parse installment response with specific card family', () {
+      final response = {
+        'status': 'success',
+        'max_inst_non_bus': '6',
+        'rates': {
+          'axess': {'1': '0', '2': '2.5', '3': '3.5'},
+          'bonus': {'1': '0', '2': '3.0', '3': '4.0'},
+        },
+      };
+
+      final info = PayTRMapper.fromInstallmentResponse(
+        response: response,
+        binNumber: '552879',
+        amount: 1000,
+        cardFamily: 'bonus',
+      );
+
+      // Bonus oranları kullanılmalı (2 taksit %3)
+      final twoInstallment = info.options.firstWhere(
+        (o) => o.installmentNumber == 2,
+      );
+      expect(twoInstallment.totalPrice, closeTo(1030.0, 0.01));
+    });
+
+    test('should return default option when rates are empty', () {
+      final response = {'status': 'success', 'rates': <String, dynamic>{}};
+
+      final info = PayTRMapper.fromInstallmentResponse(
+        response: response,
+        binNumber: '552879',
+        amount: 500,
+      );
+
+      expect(info.options.length, 1);
+      expect(info.options.first.installmentNumber, 1);
+      expect(info.options.first.totalPrice, 500.0);
+    });
+
+    test('should detect card association from BIN', () {
+      // Visa
+      var info = PayTRMapper.fromInstallmentResponse(
+        response: {'status': 'success', 'rates': {}},
+        binNumber: '411111',
+        amount: 100,
+      );
+      expect(info.cardAssociation, CardAssociation.visa);
+
+      // Mastercard
+      info = PayTRMapper.fromInstallmentResponse(
+        response: {'status': 'success', 'rates': {}},
+        binNumber: '552879',
+        amount: 100,
+      );
+      expect(info.cardAssociation, CardAssociation.masterCard);
+
+      // Amex
+      info = PayTRMapper.fromInstallmentResponse(
+        response: {'status': 'success', 'rates': {}},
+        binNumber: '378282',
+        amount: 100,
+      );
+      expect(info.cardAssociation, CardAssociation.amex);
+
+      // Troy
+      info = PayTRMapper.fromInstallmentResponse(
+        response: {'status': 'success', 'rates': {}},
+        binNumber: '979201',
+        amount: 100,
+      );
+      expect(info.cardAssociation, CardAssociation.troy);
+    });
+  });
 }
 
 PaymentRequest _createTestRequest() => const PaymentRequest(

@@ -8,6 +8,7 @@ import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
+import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import 'iyzico_error_mapper.dart';
 
@@ -269,4 +270,62 @@ class IyzicoMapper {
       return encoded;
     }
   }
+
+  // ============================================
+  // SAVED CARD / TOKENIZATION MAPPERS
+  // ============================================
+
+  /// Kayıtlı kart ile ödeme için request oluştur.
+  static Map<String, dynamic> toSavedCardPaymentRequest({
+    required String cardToken,
+    required String cardUserKey,
+    required String orderId,
+    required double amount,
+    required BuyerInfo buyer,
+    required String conversationId,
+    int installment = 1,
+    Currency currency = Currency.tryLira,
+  }) => {
+    'locale': 'tr',
+    'conversationId': conversationId,
+    'price': amount.toString(),
+    'paidPrice': amount.toString(),
+    'currency': _mapCurrency(currency),
+    'installment': installment,
+    'basketId': orderId,
+    'paymentChannel': 'WEB',
+    'paymentGroup': 'PRODUCT',
+    'paymentCard': {'cardToken': cardToken, 'cardUserKey': cardUserKey},
+    'buyer': _mapBuyer(buyer),
+    'shippingAddress': _mapAddress(buyer, 'shipping'),
+    'billingAddress': _mapAddress(buyer, 'billing'),
+    'basketItems': [
+      {
+        'id': 'ITEM_$orderId',
+        'name': 'Saved Card Payment',
+        'category1': 'Payment',
+        'itemType': 'VIRTUAL',
+        'price': amount.toString(),
+      },
+    ],
+  };
+
+  /// iyzico kart listesi response'unu SavedCard'a dönüştür.
+  static SavedCard fromSavedCardResponse(
+    Map<String, dynamic> response,
+    String cardUserKey,
+  ) => SavedCard(
+    cardToken: response['cardToken']?.toString() ?? '',
+    cardUserKey: cardUserKey,
+    lastFourDigits: response['lastFourDigits']?.toString() ?? '',
+    cardAssociation: IyzicoErrorMapper.parseCardAssociation(
+      response['cardAssociation'],
+    ),
+    cardFamily: response['cardFamily']?.toString(),
+    cardAlias: response['cardAlias']?.toString(),
+    binNumber: response['binNumber']?.toString(),
+    bankName: response['cardBankName']?.toString(),
+    expiryMonth: response['expireMonth']?.toString(),
+    expiryYear: response['expireYear']?.toString(),
+  );
 }

@@ -5,10 +5,12 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import '../../core/enums.dart';
 import '../../core/exceptions/payment_exception.dart';
+import '../../core/models/buyer_info.dart';
 import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
+import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import '../../core/payment_provider.dart';
 import 'iyzico_auth.dart';
@@ -17,7 +19,17 @@ import 'iyzico_error_mapper.dart';
 import 'iyzico_mapper.dart';
 
 /// iyzico Payment Provider
+///
+/// Test için özel http.Client kullanabilirsiniz:
+/// ```dart
+/// final mockClient = PaymentMockClient.iyzico(shouldSucceed: true);
+/// final provider = IyzicoProvider(httpClient: mockClient);
+/// ```
 class IyzicoProvider implements PaymentProvider {
+  /// Test için özel http.Client inject edilebilir
+  IyzicoProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+
+  final http.Client? _customHttpClient;
   late IyzicoConfig _config;
   late IyzicoAuth _auth;
   late http.Client _httpClient;
@@ -44,7 +56,7 @@ class IyzicoProvider implements PaymentProvider {
 
     _config = config;
     _auth = IyzicoAuth(apiKey: config.apiKey, secretKey: config.secretKey);
-    _httpClient = http.Client();
+    _httpClient = _customHttpClient ?? http.Client();
     _initialized = true;
   }
 
@@ -214,6 +226,108 @@ class IyzicoProvider implements PaymentProvider {
         }
         return PaymentStatus.pending;
     }
+  }
+
+  // ============================================
+  // SAVED CARD / TOKENIZATION METHODS
+  // ============================================
+
+  @override
+  Future<PaymentResult> chargeWithSavedCard({
+    required String cardToken,
+    required String orderId,
+    required double amount,
+    required BuyerInfo buyer,
+    String? cardUserKey,
+    int installment = 1,
+    Currency currency = Currency.tryLira,
+  }) async {
+    _checkInitialized();
+
+    if (cardUserKey == null) {
+      throw PaymentException.configError(
+        message: 'cardUserKey is required for iyzico saved card payments',
+        provider: ProviderType.iyzico,
+      );
+    }
+
+    final conversationId = _generateConversationId();
+    final body = IyzicoMapper.toSavedCardPaymentRequest(
+      cardToken: cardToken,
+      cardUserKey: cardUserKey,
+      orderId: orderId,
+      amount: amount,
+      buyer: buyer,
+      conversationId: conversationId,
+      installment: installment,
+      currency: currency,
+    );
+
+    final response = await _post(IyzicoEndpoints.payment, body);
+    return IyzicoMapper.fromPaymentResponse(response);
+  }
+
+  @override
+  Future<List<SavedCard>> getSavedCards(String cardUserKey) async {
+    _checkInitialized();
+
+    final conversationId = _generateConversationId();
+    final body = {
+      'locale': 'tr',
+      'conversationId': conversationId,
+      'cardUserKey': cardUserKey,
+    };
+
+    final response = await _post(IyzicoEndpoints.cardList, body);
+
+    if (response['status'] != 'success') {
+      final errorCode = response['errorCode']?.toString() ?? 'unknown';
+      final errorMessage =
+          response['errorMessage']?.toString() ?? 'Failed to retrieve cards';
+      throw IyzicoErrorMapper.mapError(
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      );
+    }
+
+    final cardDetails = response['cardDetails'] as List<dynamic>?;
+    if (cardDetails == null) return [];
+
+    return cardDetails
+        .map(
+          (card) => IyzicoMapper.fromSavedCardResponse(
+            card as Map<String, dynamic>,
+            cardUserKey,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<bool> deleteSavedCard({
+    required String cardToken,
+    String? cardUserKey,
+  }) async {
+    _checkInitialized();
+
+    if (cardUserKey == null) {
+      throw PaymentException.configError(
+        message: 'cardUserKey is required for iyzico card deletion',
+        provider: ProviderType.iyzico,
+      );
+    }
+
+    final conversationId = _generateConversationId();
+    final body = {
+      'locale': 'tr',
+      'conversationId': conversationId,
+      'cardUserKey': cardUserKey,
+      'cardToken': cardToken,
+    };
+
+    final response = await _post(IyzicoEndpoints.cardDelete, body);
+
+    return response['status'] == 'success';
   }
 
   @override

@@ -3,6 +3,7 @@
 [![Pub Version](https://img.shields.io/pub/v/tr_payment_hub)](https://pub.dev/packages/tr_payment_hub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)](https://dart.dev)
+[![CI](https://github.com/abdullah017/tr_payment_hub/actions/workflows/ci.yml/badge.svg)](https://github.com/abdullah017/tr_payment_hub/actions)
 
 **[Türkçe Dokümantasyon](README_TR.md)**
 
@@ -10,12 +11,12 @@ Unified Turkish payment gateway integration for Flutter/Dart applications.
 
 ## Supported Providers
 
-| Provider | Status | Non-3DS | 3DS | Installments | Refunds |
-|----------|--------|---------|-----|--------------|---------|
-| iyzico   | ✅ Stable | Yes | Yes | Yes | Yes |
-| PayTR    | ✅ Stable | Yes | Yes | Yes | Yes |
-| Param    | 🔜 Planned | - | - | - | - |
-| Sipay    | 🔜 Planned | - | - | - | - |
+| Provider | Status | Non-3DS | 3DS | Installments | Refunds | Saved Cards |
+|----------|--------|---------|-----|--------------|---------|-------------|
+| iyzico   | ✅ Stable | Yes | Yes | Yes | Yes | Yes |
+| PayTR    | ✅ Stable | Yes | Yes | Yes | Yes | No |
+| Param    | ✅ Stable | Yes | Yes | Yes | Yes | No |
+| Sipay    | ✅ Stable | Yes | Yes | Yes | Yes | Yes |
 
 ## Features
 
@@ -24,6 +25,7 @@ Unified Turkish payment gateway integration for Flutter/Dart applications.
 - **Secure** - Automatic sensitive data masking with LogSanitizer
 - **Testable** - Built-in MockPaymentProvider for unit testing
 - **Cross Platform** - Works on iOS, Android, Web, and Desktop
+- **Saved Cards** - Card tokenization support (iyzico, Sipay)
 
 ## Installation
 
@@ -31,7 +33,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tr_payment_hub: ^1.0.2
+  tr_payment_hub: ^1.0.3
 ```
 
 Then run:
@@ -52,6 +54,12 @@ final provider = TrPaymentHub.create(ProviderType.iyzico);
 
 // PayTR
 final provider = TrPaymentHub.create(ProviderType.paytr);
+
+// Param
+final provider = TrPaymentHub.create(ProviderType.param);
+
+// Sipay
+final provider = TrPaymentHub.create(ProviderType.sipay);
 
 // Mock (for testing)
 final provider = TrPaymentHub.createMock(shouldSucceed: true);
@@ -76,6 +84,24 @@ final config = PayTRConfig(
   successUrl: 'https://yoursite.com/success',
   failUrl: 'https://yoursite.com/fail',
   callbackUrl: 'https://yoursite.com/callback',
+  isSandbox: true,
+);
+
+// Param Configuration
+final config = ParamConfig(
+  merchantId: 'YOUR_CLIENT_CODE',
+  apiKey: 'YOUR_CLIENT_USERNAME',
+  secretKey: 'YOUR_CLIENT_PASSWORD',
+  guid: 'YOUR_GUID',
+  isSandbox: true,
+);
+
+// Sipay Configuration
+final config = SipayConfig(
+  merchantId: 'YOUR_MERCHANT_ID',
+  apiKey: 'YOUR_APP_KEY',
+  secretKey: 'YOUR_APP_SECRET',
+  merchantKey: 'YOUR_MERCHANT_KEY',
   isSandbox: true,
 );
 
@@ -140,7 +166,7 @@ final threeDSResult = await provider.init3DSPayment(
 if (threeDSResult.needsWebView) {
   // Step 2: Display in WebView
   // iyzico: Use threeDSResult.htmlContent
-  // PayTR: Redirect to threeDSResult.redirectUrl
+  // PayTR/Sipay: Redirect to threeDSResult.redirectUrl
 }
 
 // Step 3: Complete after callback
@@ -177,6 +203,24 @@ if (refundResult.isSuccess) {
 }
 ```
 
+### 7. Saved Cards (iyzico & Sipay)
+
+```dart
+// Get saved cards
+final cards = await provider.getSavedCards('user_card_key');
+
+// Charge with saved card
+final result = await provider.chargeWithSavedCard(
+  cardToken: cards.first.cardToken,
+  orderId: 'ORDER_456',
+  amount: 50.0,
+  buyer: buyerInfo,
+);
+
+// Delete saved card
+await provider.deleteSavedCard(cardToken: 'card_token');
+```
+
 ## Error Handling
 
 ```dart
@@ -204,6 +248,8 @@ try {
 
 ## Testing
 
+### Unit Tests with Mock Provider
+
 ```dart
 // Create mock provider
 final mockProvider = TrPaymentHub.createMock(
@@ -217,6 +263,49 @@ final failingProvider = TrPaymentHub.createMock(
   customError: PaymentException.insufficientFunds(),
 );
 ```
+
+### Running Tests
+
+```bash
+# Run all unit tests
+dart test
+
+# Run with coverage
+dart test --coverage=coverage
+
+# Run integration tests (requires credentials)
+export IYZICO_MERCHANT_ID=xxx
+export IYZICO_API_KEY=xxx
+export IYZICO_SECRET_KEY=xxx
+dart test --tags=integration
+```
+
+## Test Cards
+
+Use these test card numbers in sandbox environments:
+
+| Provider | Card Number | Scenario |
+|----------|-------------|----------|
+| iyzico | 5528790000000008 | Success (MasterCard) |
+| iyzico | 5400010000000004 | Success (MasterCard) |
+| iyzico | 4543590000000006 | Insufficient Funds |
+| iyzico | 4059030000000009 | 3DS Required |
+| PayTR | 4355084355084358 | Success |
+| PayTR | 5571135571135575 | Success (MasterCard) |
+| Sipay | 4508034508034509 | Success |
+| Param | 4022774022774026 | Success |
+
+**Test CVV:** 000 or 123
+**Test Expiry:** Any future date (e.g., 12/2030)
+
+## Sandbox Environments
+
+| Provider | Sandbox URL | Documentation |
+|----------|-------------|---------------|
+| iyzico | sandbox-api.iyzipay.com | [dev.iyzipay.com](https://dev.iyzipay.com) |
+| PayTR | www.paytr.com | [dev.paytr.com](https://dev.paytr.com) |
+| Sipay | sandbox.sipay.com.tr | [apidocs.sipay.com.tr](https://apidocs.sipay.com.tr) |
+| Param | test-dmz.param.com.tr | [dev.param.com.tr](https://dev.param.com.tr) |
 
 ## Security Best Practices
 
@@ -250,6 +339,9 @@ Turkish payment APIs have CORS restrictions. For Flutter Web:
 | `getInstallments(bin, amount)` | Get installment options |
 | `refund(request)` | Process refund |
 | `getPaymentStatus(id)` | Check payment status |
+| `chargeWithSavedCard(...)` | Pay with saved card |
+| `getSavedCards(userKey)` | List saved cards |
+| `deleteSavedCard(token)` | Remove saved card |
 | `dispose()` | Clean up resources |
 
 ## Contributing
@@ -271,4 +363,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Note:** This is a community package, not an official iyzico or PayTR product.
+**Note:** This is a community package, not an official iyzico, PayTR, Param, or Sipay product.

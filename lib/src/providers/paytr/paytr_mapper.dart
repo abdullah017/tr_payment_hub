@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../../core/enums.dart';
 import '../../core/models/basket_item.dart';
+import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
 import '../../core/models/three_ds_result.dart';
@@ -213,5 +214,179 @@ class PayTRMapper {
 
     final jsonString = jsonEncode(basketArray);
     return base64.encode(utf8.encode(jsonString));
+  }
+
+  /// Taksit oranları sorgusu için request body
+  static Map<String, String> toInstallmentRequest({
+    required String merchantId,
+    required String requestId,
+    required String paytrToken,
+  }) => {
+    'merchant_id': merchantId,
+    'request_id': requestId,
+    'paytr_token': paytrToken,
+  };
+
+  /// Taksit oranları response'unu parse et
+  ///
+  /// PayTR response formatı:
+  /// ```json
+  /// {
+  ///   "status": "success",
+  ///   "request_id": "xxx",
+  ///   "max_inst_non_bus": "12",
+  ///   "rates": {
+  ///     "axess": {"1": "0", "2": "2.5", "3": "3.5", ...},
+  ///     "world": {"1": "0", "2": "2.5", ...},
+  ///     ...
+  ///   }
+  /// }
+  /// ```
+  static InstallmentInfo fromInstallmentResponse({
+    required Map<String, dynamic> response,
+    required String binNumber,
+    required double amount,
+    String? cardFamily,
+  }) {
+    final rawRates = response['rates'];
+    final rates = rawRates is Map ? Map<String, dynamic>.from(rawRates) : null;
+    final maxInstallment =
+        int.tryParse(response['max_inst_non_bus']?.toString() ?? '12') ?? 12;
+
+    // Kart ailesine göre oranları bul
+    // Varsayılan olarak tüm oranların ortalamasını kullan
+    var selectedRates = <String, dynamic>{};
+    var detectedCardFamily = cardFamily ?? 'Unknown';
+
+    if (rates != null) {
+      // Kart ailesi belirtilmişse onu kullan
+      if (cardFamily != null) {
+        final normalizedFamily = cardFamily.toLowerCase();
+        final familyRates = rates[normalizedFamily];
+        if (familyRates is Map) {
+          selectedRates = Map<String, dynamic>.from(familyRates);
+        }
+      }
+
+      // Bulunamadıysa ilk mevcut oranları kullan
+      if (selectedRates.isEmpty && rates.isNotEmpty) {
+        final firstKey = rates.keys.first;
+        final firstRates = rates[firstKey];
+        if (firstRates is Map) {
+          selectedRates = Map<String, dynamic>.from(firstRates);
+        }
+        detectedCardFamily = _formatCardFamily(firstKey);
+      }
+    }
+
+    // Taksit seçeneklerini oluştur
+    final options = <InstallmentOption>[];
+
+    if (selectedRates.isNotEmpty) {
+      for (final entry in selectedRates.entries) {
+        final installmentNumber = int.tryParse(entry.key);
+        if (installmentNumber == null || installmentNumber < 1) continue;
+        if (installmentNumber > maxInstallment) continue;
+
+        final ratePercent = double.tryParse(entry.value.toString()) ?? 0;
+        final totalPrice = amount * (1 + ratePercent / 100);
+        final installmentPrice = totalPrice / installmentNumber;
+
+        options.add(
+          InstallmentOption(
+            installmentNumber: installmentNumber,
+            installmentPrice: installmentPrice,
+            totalPrice: totalPrice,
+          ),
+        );
+      }
+    }
+
+    // Eğer hiç oran yoksa varsayılan tek çekim ekle
+    if (options.isEmpty) {
+      options.add(
+        InstallmentOption(
+          installmentNumber: 1,
+          installmentPrice: amount,
+          totalPrice: amount,
+        ),
+      );
+    }
+
+    // Taksit sayısına göre sırala
+    options.sort((a, b) => a.installmentNumber.compareTo(b.installmentNumber));
+
+    return InstallmentInfo(
+      binNumber: binNumber,
+      price: amount,
+      cardType: CardType.creditCard,
+      cardAssociation: _detectCardAssociation(binNumber),
+      cardFamily: detectedCardFamily,
+      bankName: 'PayTR',
+      bankCode: 0,
+      force3DS: true, // PayTR genellikle 3DS zorunlu tutar
+      forceCVC: true,
+      options: options,
+    );
+  }
+
+  /// Kart ailesi adını formatla
+  static String _formatCardFamily(String rawFamily) {
+    switch (rawFamily.toLowerCase()) {
+      case 'axess':
+        return 'Axess';
+      case 'world':
+        return 'World';
+      case 'maximum':
+        return 'Maximum';
+      case 'cardfinans':
+        return 'CardFinans';
+      case 'paraf':
+        return 'Paraf';
+      case 'advantage':
+        return 'Advantage';
+      case 'combo':
+        return 'Combo';
+      case 'bonus':
+        return 'Bonus';
+      default:
+        return rawFamily;
+    }
+  }
+
+  /// BIN numarasından kart birliğini tespit et
+  static CardAssociation _detectCardAssociation(String binNumber) {
+    if (binNumber.isEmpty) return CardAssociation.visa;
+
+    final firstDigit = binNumber[0];
+    final firstTwo = binNumber.length >= 2 ? binNumber.substring(0, 2) : '';
+    final firstFour = binNumber.length >= 4 ? binNumber.substring(0, 4) : '';
+
+    // Visa: 4 ile başlar
+    if (firstDigit == '4') return CardAssociation.visa;
+
+    // Mastercard: 51-55 veya 2221-2720
+    if (firstTwo.isNotEmpty) {
+      final twoDigits = int.tryParse(firstTwo);
+      if (twoDigits != null && twoDigits >= 51 && twoDigits <= 55) {
+        return CardAssociation.masterCard;
+      }
+    }
+    if (firstFour.isNotEmpty) {
+      final fourDigits = int.tryParse(firstFour);
+      if (fourDigits != null && fourDigits >= 2221 && fourDigits <= 2720) {
+        return CardAssociation.masterCard;
+      }
+    }
+
+    // Amex: 34 veya 37 ile başlar
+    if (firstTwo == '34' || firstTwo == '37') {
+      return CardAssociation.amex;
+    }
+
+    // Troy: 9792 ile başlar (Türk kartları)
+    if (firstFour == '9792') return CardAssociation.troy;
+
+    return CardAssociation.visa;
   }
 }

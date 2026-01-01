@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <TP_Islem_Iptal_IadeResponse xmlns="https://turkpos.com.tr/">
+      <TP_Islem_Iptal_IadeResult>
+        <Sonuc>1</Sonuc>
+        <Sonuc_Str>İade işlemi başarılı</Sonuc_Str>
+        <Dekont_ID>987654321</Dekont_ID>
+        <Iade_Tutari>50.00</Iade_Tutari>
+      </TP_Islem_Iptal_IadeResult>
+    </TP_Islem_Iptal_IadeResponse>
+  </soap:Body>
+</soap:Envelope>

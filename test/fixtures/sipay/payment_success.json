@@ -1,0 +1,15 @@
+{
+  "status_code": 100,
+  "status_description": "Ödeme başarıyla tamamlandı",
+  "order_id": "ORD123456789",
+  "transaction_id": "TX987654321",
+  "invoice_id": "SIP1609459200000",
+  "amount": 100.0,
+  "total": 100.0,
+  "currency_code": "TRY",
+  "installment": 1,
+  "card_type": "credit",
+  "card_program": "MASTERCARD",
+  "card_bank": "Garanti BBVA",
+  "hash_key": "mock_hash_key_value"
+}

@@ -1,0 +1,6 @@
+{
+  "status": "success",
+  "merchant_oid": "ORDER_123",
+  "return_amount": 5000,
+  "reference_no": "REF123456"
+}

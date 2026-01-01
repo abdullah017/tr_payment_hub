@@ -6,10 +6,12 @@ import '../../core/config.dart';
 import '../../core/enums.dart';
 import '../../core/exceptions/payment_exception.dart';
 import '../../core/models/basket_item.dart';
+import '../../core/models/buyer_info.dart';
 import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
+import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import '../../core/payment_provider.dart';
 import 'paytr_auth.dart';
@@ -18,7 +20,17 @@ import 'paytr_error_mapper.dart';
 import 'paytr_mapper.dart';
 
 /// PayTR Payment Provider
+///
+/// Test için özel http.Client kullanabilirsiniz:
+/// ```dart
+/// final mockClient = PaymentMockClient.paytr(shouldSucceed: true);
+/// final provider = PayTRProvider(httpClient: mockClient);
+/// ```
 class PayTRProvider implements PaymentProvider {
+  /// Test için özel http.Client inject edilebilir
+  PayTRProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+
+  final http.Client? _customHttpClient;
   late PayTRConfig _config;
   late PayTRAuth _auth;
   late http.Client _httpClient;
@@ -52,7 +64,7 @@ class PayTRProvider implements PaymentProvider {
       merchantKey: config.apiKey,
       merchantSalt: config.secretKey,
     );
-    _httpClient = http.Client();
+    _httpClient = _customHttpClient ?? http.Client();
     _initialized = true;
   }
 
@@ -278,26 +290,50 @@ class PayTRProvider implements PaymentProvider {
   }) async {
     _checkInitialized();
 
-    // PayTR'de taksit oranları genellikle mağaza panelinden alınır
-    // API ile BIN sorgulama sınırlıdır
-    // Bu yüzden statik bir yapı döndürüyoruz
+    final requestId = _generateRequestId();
+    final token = _auth.generateInstallmentToken(requestId: requestId);
 
-    // NOT: Gerçek uygulamada PayTR mağaza panelinden
-    // taksit oranlarını çekip cache'lemeniz önerilir
-
-    return InstallmentInfo(
-      binNumber: binNumber,
-      price: amount,
-      cardType: CardType.creditCard,
-      cardAssociation: CardAssociation.visa,
-      cardFamily: 'Unknown',
-      bankName: 'Unknown',
-      bankCode: 0,
-      force3DS: true, // PayTR genellikle 3DS zorunlu
-      forceCVC: true,
-      options: _generateDefaultInstallmentOptions(amount),
+    final body = PayTRMapper.toInstallmentRequest(
+      merchantId: _config.merchantId,
+      requestId: requestId,
+      paytrToken: token,
     );
+
+    try {
+      final response = await _postForm(PayTREndpoints.installmentRates, body);
+
+      if (response['status'] == 'success') {
+        return PayTRMapper.fromInstallmentResponse(
+          response: response,
+          binNumber: binNumber,
+          amount: amount,
+        );
+      } else {
+        // API hatası durumunda varsayılan değerler döndür
+        return _generateDefaultInstallmentInfo(binNumber, amount);
+      }
+    } catch (e) {
+      // Hata durumunda varsayılan değerler döndür
+      return _generateDefaultInstallmentInfo(binNumber, amount);
+    }
   }
+
+  /// Varsayılan taksit bilgisi oluştur (API hatası durumunda fallback)
+  InstallmentInfo _generateDefaultInstallmentInfo(
+    String binNumber,
+    double amount,
+  ) => InstallmentInfo(
+    binNumber: binNumber,
+    price: amount,
+    cardType: CardType.creditCard,
+    cardAssociation: CardAssociation.visa,
+    cardFamily: 'Unknown',
+    bankName: 'Unknown',
+    bankCode: 0,
+    force3DS: true,
+    forceCVC: true,
+    options: _generateDefaultInstallmentOptions(amount),
+  );
 
   @override
   Future<PaymentStatus> getPaymentStatus(String transactionId) async {
@@ -317,6 +353,45 @@ class PayTRProvider implements PaymentProvider {
     } catch (e) {
       return PaymentStatus.failed;
     }
+  }
+
+  // ============================================
+  // SAVED CARD / TOKENIZATION METHODS
+  // ============================================
+
+  @override
+  Future<PaymentResult> chargeWithSavedCard({
+    required String cardToken,
+    required String orderId,
+    required double amount,
+    required BuyerInfo buyer,
+    String? cardUserKey,
+    int installment = 1,
+    Currency currency = Currency.tryLira,
+  }) async {
+    throw UnsupportedError(
+      'PayTR Direct API does not support saved card payments. '
+      'Use the hosted checkout (iFrame) integration for recurring payments.',
+    );
+  }
+
+  @override
+  Future<List<SavedCard>> getSavedCards(String cardUserKey) async {
+    throw UnsupportedError(
+      'PayTR Direct API does not support card storage/tokenization. '
+      'Use the hosted checkout (iFrame) integration for card management.',
+    );
+  }
+
+  @override
+  Future<bool> deleteSavedCard({
+    required String cardToken,
+    String? cardUserKey,
+  }) async {
+    throw UnsupportedError(
+      'PayTR Direct API does not support card storage/tokenization. '
+      'Use the hosted checkout (iFrame) integration for card management.',
+    );
   }
 
   @override
@@ -342,6 +417,8 @@ class PayTRProvider implements PaymentProvider {
   }
 
   String _generateMerchantOid() => 'SP${DateTime.now().millisecondsSinceEpoch}';
+
+  String _generateRequestId() => 'REQ${DateTime.now().millisecondsSinceEpoch}';
 
   String _formatAmount(double amount) => (amount * 100).round().toString();
 

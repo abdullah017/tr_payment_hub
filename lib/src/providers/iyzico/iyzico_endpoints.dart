@@ -22,6 +22,17 @@ class IyzicoEndpoints {
   static const String refund = '/payment/refund';
   static const String cancel = '/payment/cancel';
 
+  // Card Storage (Tokenization)
+
+  /// Payment with stored card token.
+  static const String payment = '/payment/auth';
+
+  /// List saved cards for a card user key.
+  static const String cardList = '/cardstorage/cards';
+
+  /// Delete a saved card.
+  static const String cardDelete = '/cardstorage/card';
+
   // Checkout Form (alternatif yöntem)
   static const String checkoutFormInit =
       '/payment/iyzipos/checkoutform/initialize/auth/ecom';

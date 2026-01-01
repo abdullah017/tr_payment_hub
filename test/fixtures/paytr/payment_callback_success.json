@@ -1,0 +1,14 @@
+{
+  "merchant_oid": "ORDER_123",
+  "status": "success",
+  "total_amount": 10000,
+  "hash": "mock_hash_value",
+  "failed_reason_code": "",
+  "failed_reason_msg": "",
+  "payment_type": "card",
+  "currency": "TL",
+  "payment_amount": 10000,
+  "installment_count": 1,
+  "card_brand": "MASTERCARD",
+  "masked_pan": "552879******0008"
+}

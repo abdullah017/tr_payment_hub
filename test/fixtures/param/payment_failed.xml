@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <TP_WMD_PayResponse xmlns="https://turkpos.com.tr/">
+      <TP_WMD_PayResult>
+        <Sonuc>0</Sonuc>
+        <Sonuc_Str>Yetersiz Bakiye</Sonuc_Str>
+        <Banka_Sonuc_Kod>51</Banka_Sonuc_Kod>
+        <UCD_MD>0</UCD_MD>
+      </TP_WMD_PayResult>
+    </TP_WMD_PayResponse>
+  </soap:Body>
+</soap:Envelope>

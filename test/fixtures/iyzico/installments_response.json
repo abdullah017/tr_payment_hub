@@ -1,0 +1,52 @@
+{
+  "status": "success",
+  "locale": "tr",
+  "systemTime": 1609459200000,
+  "conversationId": "123456789",
+  "installmentDetails": [
+    {
+      "binNumber": "552879",
+      "price": 1000.0,
+      "cardType": "CREDIT_CARD",
+      "cardAssociation": "MASTER_CARD",
+      "cardFamilyName": "Bonus",
+      "force3ds": 0,
+      "bankCode": 62,
+      "bankName": "Garanti BBVA",
+      "forceCvc": 0,
+      "commercial": 0,
+      "installmentPrices": [
+        {
+          "installmentNumber": 1,
+          "installmentPrice": 1000.0,
+          "totalPrice": 1000.0
+        },
+        {
+          "installmentNumber": 2,
+          "installmentPrice": 510.0,
+          "totalPrice": 1020.0
+        },
+        {
+          "installmentNumber": 3,
+          "installmentPrice": 343.33,
+          "totalPrice": 1030.0
+        },
+        {
+          "installmentNumber": 6,
+          "installmentPrice": 176.67,
+          "totalPrice": 1060.0
+        },
+        {
+          "installmentNumber": 9,
+          "installmentPrice": 120.0,
+          "totalPrice": 1080.0
+        },
+        {
+          "installmentNumber": 12,
+          "installmentPrice": 91.67,
+          "totalPrice": 1100.0
+        }
+      ]
+    }
+  ]
+}

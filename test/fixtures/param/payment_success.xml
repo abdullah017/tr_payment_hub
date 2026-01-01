@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <TP_WMD_PayResponse xmlns="https://turkpos.com.tr/">
+      <TP_WMD_PayResult>
+        <Sonuc>1</Sonuc>
+        <Sonuc_Str>Başarılı</Sonuc_Str>
+        <Dekont_ID>123456789</Dekont_ID>
+        <Tahsilat_Tutari>100.00</Tahsilat_Tutari>
+        <Odeme_Tutari>100.00</Odeme_Tutari>
+        <Siparis_ID>ORDER_123</Siparis_ID>
+        <Banka_Sonuc_Kod>00</Banka_Sonuc_Kod>
+        <Islem_ID>TX123456</Islem_ID>
+        <Islem_GUID>a1b2c3d4-e5f6-7890-abcd-ef1234567890</Islem_GUID>
+      </TP_WMD_PayResult>
+    </TP_WMD_PayResponse>
+  </soap:Body>
+</soap:Envelope>

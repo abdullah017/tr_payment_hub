@@ -1,0 +1,8 @@
+{
+  "status": "failure",
+  "errorCode": "10051",
+  "errorMessage": "Kart limiti yetersiz, yetersiz bakiye",
+  "locale": "tr",
+  "systemTime": 1609459200000,
+  "conversationId": "123456789"
+}

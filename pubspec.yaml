@@ -1,6 +1,6 @@
 name: tr_payment_hub
-description: Turkish payment gateway integration (iyzico, PayTR) for Dart/Flutter.
-version: 1.0.3
+description: Turkish payment gateway integration (iyzico, PayTR, Param, Sipay) for Dart/Flutter.
+version: 1.0.4
 homepage: https://github.com/abdullah017/tr_payment_hub
 repository: https://github.com/abdullah017/tr_payment_hub
 issue_tracker: https://github.com/abdullah017/tr_payment_hub/issues
@@ -20,6 +20,7 @@ dependencies:
   http: ^1.2.0
   crypto: ^3.0.3
   meta: ^1.11.0
+  xml: ^6.5.0
 
 dev_dependencies:
   lints: ^6.0.0

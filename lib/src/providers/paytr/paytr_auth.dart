@@ -63,6 +63,12 @@ class PayTRAuth {
     return _generateToken(hashString);
   }
 
+  /// Taksit oranları sorgusu için token oluştur
+  String generateInstallmentToken({required String requestId}) {
+    final hashString = '$merchantId$requestId';
+    return _generateToken(hashString);
+  }
+
   /// Callback hash doğrulama
   bool verifyCallbackHash({
     required String merchantOid,

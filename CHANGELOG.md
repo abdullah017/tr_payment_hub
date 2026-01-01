@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-01-01
+
+### Added
+- **Param POS Provider** - Full SOAP/XML integration
+  - Non-3DS and 3D Secure payment support
+  - Installment query by BIN number
+  - Refund operations
+  - Payment status query
+- **Sipay Provider** - Full REST/JSON integration
+  - Bearer token authentication
+  - Non-3DS and 3D Secure payment support
+  - Saved card (tokenization) support
+  - Installment query
+  - Refund operations
+- **HTTP Mocking Infrastructure** for testing without real API credentials
+  - `PaymentMockClient` factory class with provider-specific mock clients
+  - Constructor injection for all providers (`httpClient` parameter)
+  - Realistic mock responses for all endpoints
+- **Test Fixtures** - JSON/XML response files for all providers
+  - `test/fixtures/iyzico/` - 5 fixture files
+  - `test/fixtures/paytr/` - 4 fixture files
+  - `test/fixtures/param/` - 4 XML fixture files
+  - `test/fixtures/sipay/` - 6 fixture files
+  - `TestFixtures` helper class for loading fixtures
+- **GitHub Actions CI/CD** pipeline
+  - Automated testing on push/PR
+  - Code formatting check
+  - Static analysis
+  - SDK compatibility tests (3.0.0, stable, beta)
+  - pub.dev score check
+
+### Changed
+- Updated README.md with new providers, test cards, and sandbox URLs
+- All providers now support dependency injection for testing
+- Documentation now includes testing instructions
+
+### Fixed
+- Provider table now correctly shows Param and Sipay as stable
+
 ## [1.0.3] - 2025-12-24
 
 ### Added
@@ -80,7 +119,9 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/abdullah017/tr_payment_hub/releases/tag/v1.0.0

@@ -1,0 +1,6 @@
+{
+  "status_code": 0,
+  "status_description": "Yetersiz bakiye",
+  "error_code": "insufficient_balance",
+  "error_message": "Kartınızda yeterli bakiye bulunmamaktadır"
+}

@@ -1,0 +1,8 @@
+{
+  "status_code": 100,
+  "status_description": "İade başarılı",
+  "refund_id": "REF123456789",
+  "invoice_id": "SIP1609459200000",
+  "amount": 50.0,
+  "original_amount": 100.0
+}

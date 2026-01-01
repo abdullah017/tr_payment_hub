@@ -42,6 +42,8 @@ class PaymentResult {
     this.cardFamily,
     this.binNumber,
     this.lastFourDigits,
+    this.cardToken,
+    this.cardUserKey,
     this.errorCode,
     this.errorMessage,
     this.rawResponse,
@@ -59,6 +61,8 @@ class PaymentResult {
     String? cardFamily,
     String? binNumber,
     String? lastFourDigits,
+    String? cardToken,
+    String? cardUserKey,
     Map<String, dynamic>? rawResponse,
   }) => PaymentResult(
     isSuccess: true,
@@ -72,6 +76,8 @@ class PaymentResult {
     cardFamily: cardFamily,
     binNumber: binNumber,
     lastFourDigits: lastFourDigits,
+    cardToken: cardToken,
+    cardUserKey: cardUserKey,
     rawResponse: rawResponse,
   );
 
@@ -121,6 +127,18 @@ class PaymentResult {
 
   /// Last 4 digits of the card used.
   final String? lastFourDigits;
+
+  /// Token for the saved card (if card was saved).
+  ///
+  /// This token can be used for future charges without requiring
+  /// full card details. Only populated when `CardInfo.saveCard = true`.
+  final String? cardToken;
+
+  /// Card user key (iyzico specific).
+  ///
+  /// In iyzico, this identifies the customer and their saved cards.
+  /// Required for listing and managing saved cards.
+  final String? cardUserKey;
 
   /// Error code for failed payments.
   final String? errorCode;

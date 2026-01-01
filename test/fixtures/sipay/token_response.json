@@ -1,0 +1,9 @@
+{
+  "status_code": 100,
+  "status_description": "Başarılı",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_token_data.mock_signature",
+    "is_3d": 0,
+    "expires_at": "2024-12-31 23:59:59"
+  }
+}

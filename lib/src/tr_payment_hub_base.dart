@@ -2,7 +2,9 @@ import 'core/enums.dart';
 import 'core/exceptions/payment_exception.dart';
 import 'core/payment_provider.dart';
 import 'providers/iyzico/iyzico_provider.dart';
+import 'providers/param/param_provider.dart';
 import 'providers/paytr/paytr_provider.dart';
+import 'providers/sipay/sipay_provider.dart';
 import 'testing/mock_payment_provider.dart';
 
 /// TR Payment Hub - Ana Factory Sınıfı
@@ -28,6 +30,10 @@ class TrPaymentHub {
         return IyzicoProvider();
       case ProviderType.paytr:
         return PayTRProvider();
+      case ProviderType.param:
+        return ParamProvider();
+      case ProviderType.sipay:
+        return SipayProvider();
     }
   }
 
