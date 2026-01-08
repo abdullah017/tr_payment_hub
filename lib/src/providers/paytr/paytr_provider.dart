@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
@@ -417,9 +418,23 @@ class PayTRProvider implements PaymentProvider {
     }
   }
 
-  String _generateMerchantOid() => 'SP${DateTime.now().millisecondsSinceEpoch}';
+  /// Generates a unique merchant order ID using secure random
+  String _generateMerchantOid() {
+    final random = Random.secure();
+    final randomBytes = List<int>.generate(6, (_) => random.nextInt(256));
+    final randomHex =
+        randomBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return 'SP${DateTime.now().millisecondsSinceEpoch}_$randomHex';
+  }
 
-  String _generateRequestId() => 'REQ${DateTime.now().millisecondsSinceEpoch}';
+  /// Generates a unique request ID using secure random
+  String _generateRequestId() {
+    final random = Random.secure();
+    final randomBytes = List<int>.generate(4, (_) => random.nextInt(256));
+    final randomHex =
+        randomBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return 'REQ${DateTime.now().millisecondsSinceEpoch}_$randomHex';
+  }
 
   String _formatAmount(double amount) => (amount * 100).round().toString();
 

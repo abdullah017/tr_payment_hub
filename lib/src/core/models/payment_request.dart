@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '../enums.dart';
+import '../exceptions/validation_exception.dart';
 import 'basket_item.dart';
 import 'buyer_info.dart';
 import 'card_info.dart';
@@ -207,6 +208,113 @@ class PaymentRequest {
   ///
   /// Returns [paidPrice] if set, otherwise [amount].
   double get effectivePaidAmount => paidPrice ?? amount;
+
+  /// Maximum allowed amount for a single payment
+  static const double maxAmount = 999999.99;
+
+  /// Maximum allowed installment count
+  static const int maxInstallment = 12;
+
+  /// Maximum order ID length
+  static const int maxOrderIdLength = 50;
+
+  /// Validates the payment request and throws [ValidationException] if invalid.
+  ///
+  /// Validates:
+  /// * Amount is positive and within limits
+  /// * Order ID is valid
+  /// * Installment is between 1 and 12
+  /// * 3DS requires callback URL
+  /// * Basket items total matches amount
+  /// * Card and buyer info are valid
+  ///
+  /// Also calls [CardInfo.validate] and [BuyerInfo.validate].
+  ///
+  /// Throws [ValidationException] with all validation errors.
+  void validate() {
+    final errors = <String>[];
+
+    // Amount validation
+    if (amount <= 0) {
+      errors.add('amount must be greater than 0');
+    } else if (amount > maxAmount) {
+      errors.add('amount cannot exceed $maxAmount');
+    }
+
+    // Paid price validation
+    if (paidPrice != null) {
+      if (paidPrice! <= 0) {
+        errors.add('paidPrice must be greater than 0 if provided');
+      } else if (paidPrice! > amount) {
+        errors.add('paidPrice cannot exceed amount');
+      }
+    }
+
+    // Installment validation
+    if (installment < 1) {
+      errors.add('installment must be at least 1');
+    } else if (installment > maxInstallment) {
+      errors.add('installment cannot exceed $maxInstallment');
+    }
+
+    // Order ID validation
+    if (orderId.isEmpty) {
+      errors.add('orderId cannot be empty');
+    } else if (orderId.length > maxOrderIdLength) {
+      errors.add('orderId cannot exceed $maxOrderIdLength characters');
+    }
+
+    // 3DS validation
+    if (use3DS && (callbackUrl == null || callbackUrl!.isEmpty)) {
+      errors.add('callbackUrl is required when use3DS is true');
+    }
+
+    // Basket items validation
+    if (basketItems.isEmpty) {
+      errors.add('basketItems cannot be empty');
+    } else {
+      // Calculate basket total
+      final basketTotal = basketItems.fold<double>(
+        0,
+        (sum, item) => sum + (item.price * item.quantity),
+      );
+
+      // Allow small rounding differences (0.01)
+      if ((basketTotal - amount).abs() > 0.01) {
+        errors.add(
+          'basket items total ($basketTotal) must equal amount ($amount)',
+        );
+      }
+
+      // Validate individual basket items
+      for (var i = 0; i < basketItems.length; i++) {
+        final item = basketItems[i];
+        if (item.id.isEmpty) {
+          errors.add('basketItems[$i].id cannot be empty');
+        }
+        if (item.name.isEmpty) {
+          errors.add('basketItems[$i].name cannot be empty');
+        }
+        if (item.price <= 0) {
+          errors.add('basketItems[$i].price must be greater than 0');
+        }
+        if (item.quantity < 1) {
+          errors.add('basketItems[$i].quantity must be at least 1');
+        }
+      }
+    }
+
+    // Throw early errors before nested validation
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors: errors);
+    }
+
+    // Card validation (will throw its own ValidationException)
+    card.validate();
+
+    // Buyer validation (will throw its own ValidationException)
+    buyer.validate();
+  }
 
   /// Creates a copy with the given fields replaced.
   PaymentRequest copyWith({

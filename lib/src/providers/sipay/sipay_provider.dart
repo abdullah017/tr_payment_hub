@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
@@ -416,7 +417,14 @@ class SipayProvider implements PaymentProvider {
     }
   }
 
-  String _generateInvoiceId() => 'SIP${DateTime.now().millisecondsSinceEpoch}';
+  /// Generates a unique invoice ID using secure random
+  String _generateInvoiceId() {
+    final random = Random.secure();
+    final randomBytes = List<int>.generate(8, (_) => random.nextInt(256));
+    final randomHex =
+        randomBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return 'SIP${DateTime.now().millisecondsSinceEpoch}_$randomHex';
+  }
 
   String _mapCurrency(Currency currency) {
     switch (currency) {

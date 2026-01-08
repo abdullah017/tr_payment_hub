@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:http/http.dart' as http;
 
 import '../../core/config.dart';
@@ -373,7 +375,14 @@ class ParamProvider implements PaymentProvider {
     }
   }
 
-  String _generateOrderId() => 'PARAM${DateTime.now().millisecondsSinceEpoch}';
+  /// Generates a unique order ID using secure random
+  String _generateOrderId() {
+    final random = Random.secure();
+    final randomBytes = List<int>.generate(6, (_) => random.nextInt(256));
+    final randomHex =
+        randomBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return 'PARAM${DateTime.now().millisecondsSinceEpoch}_$randomHex';
+  }
 
   String _formatAmount(double amount) => (amount * 100).round().toString();
 

@@ -127,6 +127,9 @@ library;
 export 'src/core/config.dart';
 export 'src/core/enums.dart';
 export 'src/core/exceptions/payment_exception.dart';
+export 'src/core/exceptions/validation_exception.dart';
+// Logging
+export 'src/core/logging/payment_logger.dart';
 export 'src/core/models/basket_item.dart';
 export 'src/core/models/buyer_info.dart';
 export 'src/core/models/card_info.dart';
@@ -136,23 +139,23 @@ export 'src/core/models/payment_result.dart';
 export 'src/core/models/refund_request.dart';
 export 'src/core/models/saved_card.dart';
 export 'src/core/models/three_ds_result.dart';
+// Network utilities
+export 'src/core/network/circuit_breaker.dart';
+export 'src/core/network/retry_handler.dart';
 export 'src/core/payment_provider.dart';
-
 // Providers
 export 'src/providers/iyzico/iyzico_provider.dart';
 export 'src/providers/param/param_provider.dart';
 export 'src/providers/paytr/paytr_provider.dart';
 export 'src/providers/sipay/sipay_provider.dart';
-
 // Testing
 export 'src/testing/fake_data.dart';
 export 'src/testing/mock_http_client.dart';
 export 'src/testing/mock_payment_provider.dart';
 export 'src/testing/test_cards.dart';
-
 // Factory
 export 'src/tr_payment_hub_base.dart';
-
 // Utils
+export 'src/core/utils/payment_utils.dart';
 export 'src/utils/hash_utils.dart';
 export 'src/utils/log_sanitizer.dart';
