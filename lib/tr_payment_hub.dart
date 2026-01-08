@@ -123,6 +123,11 @@
 /// * Never log raw card numbers or CVV values
 library;
 
+// Client (Proxy Mode)
+export 'src/client/proxy_config.dart';
+export 'src/client/proxy_payment_provider.dart';
+export 'src/client/validators/card_validator.dart';
+export 'src/client/validators/request_validator.dart';
 // Core
 export 'src/core/config.dart';
 export 'src/core/enums.dart';
