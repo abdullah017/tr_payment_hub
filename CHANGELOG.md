@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-01-09
+
+### Added
+- **PaymentWebView Widget** - Built-in 3D Secure WebView for Flutter apps
+  - `PaymentWebView` - Main widget supporting both HTML content (iyzico) and redirect URLs (PayTR)
+  - `PaymentWebView.show()` - Full-screen modal display with cancel confirmation
+  - `PaymentWebView.showBottomSheet()` - Bottom sheet display option
+  - `PaymentWebViewTheme` - Customizable theme configuration (colors, loading text, app bar, etc.)
+  - `PaymentWebViewResult` - Result model with status (success, cancelled, timeout, error)
+  - Automatic callback URL detection and parameter extraction
+  - Configurable timeout (default: 5 minutes)
+  - Loading overlay and error states with retry support
+  - Turkish localization for UI text
+
+- **NetworkClient Interface** - HTTP client abstraction for custom implementations
+  - `NetworkClient` abstract class - Allows using http, Dio, or custom HTTP clients
+  - `NetworkResponse` - Unified response wrapper (statusCode, body, headers, isSuccess)
+  - `NetworkException` - Network-specific exception type
+  - `HttpNetworkClient` - Default implementation using http package
+  - All providers now accept optional `NetworkClient` parameter
+  - Backward compatible with existing `http.Client` parameter
+
+- **Backend Validation** - Joi validation added to Node.js example
+  - Comprehensive validation schemas for all endpoints
+  - Card validation (Luhn algorithm, expiry, CVV format)
+  - Buyer validation (email, phone, IP address)
+  - Basket item validation
+  - Custom error messages in Turkish
+  - Validation middleware factory function
+
+### Changed
+- **All providers migrated to NetworkClient interface**
+  - `IyzicoProvider` - Now uses NetworkClient internally
+  - `PayTRProvider` - Now uses NetworkClient internally
+  - `ParamProvider` - Now uses NetworkClient internally
+  - `SipayProvider` - Now uses NetworkClient internally
+  - `ProxyPaymentProvider` - Now uses NetworkClient internally
+- **pubspec.yaml updated**
+  - Added Flutter SDK dependency (required for widgets)
+  - Added `webview_flutter: ^4.4.0` dependency
+  - Version bumped to 3.1.0
+- **Exports updated**
+  - `tr_payment_hub.dart` now exports widgets and NetworkClient
+  - `tr_payment_hub_client.dart` now exports widgets and NetworkClient
+
+### Custom HTTP Client Usage
+
+```dart
+// Using Dio (implement your own DioNetworkClient)
+class DioNetworkClient implements NetworkClient {
+  final Dio _dio;
+  DioNetworkClient({Dio? dio}) : _dio = dio ?? Dio();
+
+  @override
+  Future<NetworkResponse> post(String url, {...}) async {
+    final response = await _dio.post(url, data: body);
+    return NetworkResponse(
+      statusCode: response.statusCode ?? 500,
+      body: response.data.toString(),
+      headers: response.headers.map.map((k, v) => MapEntry(k, v.join(','))),
+    );
+  }
+  // ... implement other methods
+}
+
+// Use with any provider
+final provider = IyzicoProvider(networkClient: DioNetworkClient());
+await provider.initialize(config);
+```
+
+### No Breaking Changes
+- All existing v3.0.0 code continues to work unchanged
+- `http.Client` parameter still supported for backward compatibility
+- Providers create default `HttpNetworkClient` if no custom client provided
+
 ## [3.0.0] - 2026-01-08
 
 ### Added
@@ -273,7 +348,8 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/abdullah017/tr_payment_hub/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...v3.0.0
 [2.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...v2.0.0

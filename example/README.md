@@ -1,27 +1,34 @@
 # TR Payment Hub - Example App
 
-Realistic Flutter payment integration example.
+Realistic Flutter payment integration example with built-in 3DS WebView.
+
+## What's New in v3.1.0
+
+- **PaymentWebView** - Built-in 3D Secure WebView widget
+- **No more custom WebView code** - Just call `PaymentWebView.show()`
+- **Automatic callback detection** - Handles both iyzico HTML and PayTR iframe
+- **Customizable theme** - Colors, loading text, timeout
 
 ## Payment Flow
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Payment Form   │────▶│  3DS WebView    │────▶│  Result Screen  │
-│  (card details) │     │  (bank verify)  │     │  (success/fail) │
+│  Payment Form   │────▶│ PaymentWebView  │────▶│  Result Screen  │
+│  (card details) │     │ (built-in 3DS)  │     │  (success/fail) │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
 **Non-3DS:** Form → Result (direct)
-**3DS:** Form → WebView → Result
+**3DS:** Form → PaymentWebView → Result
 
 ## Features
 
 - Provider selection (Mock/iyzico/PayTR/Param/Sipay)
-- Card details form
+- Card details form with validation
 - 3D Secure toggle
-- WebView for bank verification
-- Callback URL interception
-- Result display
+- **Built-in PaymentWebView** for bank verification (NEW in v3.1.0)
+- Automatic callback URL interception
+- Result display with transaction details
 - HTTP mocking for testing without real API credentials
 
 ## Quick Start
@@ -37,35 +44,75 @@ flutter run
 ### 1. Payment Form
 User enters card details and taps "Pay"
 
-### 2. For 3D Secure
+### 2. For 3D Secure (Using Built-in PaymentWebView)
+
 ```dart
-// Provider returns HTML
+// Initialize 3DS
 final threeDSResult = await provider.init3DSPayment(request);
 
-// Show in WebView
-Navigator.push(context, ThreeDSWebViewScreen(
-  htmlContent: threeDSResult.htmlContent,
+// Show built-in PaymentWebView - handles everything automatically!
+final webViewResult = await PaymentWebView.show(
+  context: context,
+  threeDSResult: threeDSResult,
   callbackUrl: 'https://myapp.com/callback',
-));
-```
+  // Optional: Customize appearance
+  theme: PaymentWebViewTheme(
+    appBarTitle: '3D Secure Doğrulama',
+    loadingText: 'Banka sayfası yükleniyor...',
+    progressColor: Colors.blue,
+  ),
+  timeout: Duration(minutes: 5),
+);
 
-### 3. WebView Intercepts Callback
-```dart
-onNavigationRequest: (request) {
-  if (request.url.startsWith(callbackUrl)) {
-    final params = Uri.parse(request.url).queryParameters;
-    Navigator.pop(context, params); // Return callback data
-  }
+// Handle result
+if (webViewResult.isSuccess) {
+  final result = await provider.complete3DSPayment(
+    threeDSResult.transactionId!,
+    callbackData: webViewResult.callbackData!,
+  );
+} else if (webViewResult.isCancelled) {
+  // User cancelled
+} else if (webViewResult.isTimeout) {
+  // Timed out
+} else if (webViewResult.isError) {
+  // Error: webViewResult.errorMessage
 }
 ```
 
-### 4. Complete Payment
+### 3. Alternative: Bottom Sheet Display
+
 ```dart
-final result = await provider.complete3DSPayment(
-  transactionId,
-  callbackData: callbackParams,
+final result = await PaymentWebView.showBottomSheet(
+  context: context,
+  threeDSResult: threeDSResult,
+  callbackUrl: 'https://myapp.com/callback',
 );
 ```
+
+## PaymentWebViewTheme Options
+
+```dart
+PaymentWebViewTheme(
+  backgroundColor: Colors.white,
+  progressColor: Colors.blue,
+  loadingText: 'Loading...',
+  loadingTextStyle: TextStyle(fontSize: 14),
+  appBarColor: Colors.white,
+  appBarTitle: '3D Secure',
+  appBarTitleStyle: TextStyle(color: Colors.black),
+  showCloseButton: true,
+  closeButtonIcon: Icons.close,
+)
+```
+
+## PaymentWebViewResult Status
+
+| Status | Description |
+|--------|-------------|
+| `success` | 3DS completed, callbackData available |
+| `cancelled` | User closed the WebView |
+| `timeout` | Exceeded timeout duration |
+| `error` | WebView error occurred |
 
 ## Test Cards
 
@@ -93,16 +140,46 @@ final result = await provider.complete3DSPayment(
 
 ```
 lib/main.dart
-├── PaymentFormScreen   - Card form, provider selection
-├── ThreeDSWebViewScreen - Bank verification WebView
-└── ResultScreen        - Payment result display
+├── PaymentFormScreen  - Card form, provider selection
+└── ResultScreen       - Payment result display
+
+Note: ThreeDSWebViewScreen is no longer needed!
+      Use PaymentWebView.show() instead.
 ```
 
 ## Notes
 
 - Uses `MockPaymentProvider` - no real API keys needed
 - Toggle "Use 3D Secure" to test both flows
-- WebView intercepts callback URL and extracts parameters
+- PaymentWebView automatically detects callback URL and extracts parameters
+- Supports both iyzico HTML content and PayTR iframe URLs
+
+## Migration from Custom WebView
+
+### Before (v3.0.x)
+```dart
+// You had to create your own WebView screen
+final callbackData = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (_) => ThreeDSWebViewScreen(  // Custom code!
+      htmlContent: result.htmlContent,
+      redirectUrl: result.redirectUrl,
+      callbackUrl: callbackUrl,
+    ),
+  ),
+);
+```
+
+### After (v3.1.0+)
+```dart
+// Just use the built-in widget
+final result = await PaymentWebView.show(
+  context: context,
+  threeDSResult: threeDSResult,
+  callbackUrl: callbackUrl,
+);
+```
 
 ## Testing with Mock HTTP Client
 

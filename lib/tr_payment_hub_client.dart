@@ -81,5 +81,12 @@ export 'src/testing/mock_payment_provider.dart';
 // Utils
 export 'src/utils/log_sanitizer.dart';
 
+// Network utilities (for custom NetworkClient implementations)
+export 'src/core/network/http_network_client.dart';
+export 'src/core/network/network_client.dart';
+
+// Widgets
+export 'src/widgets/widgets.dart';
+
 // Factory (only createProxy and createMock exposed via TrPaymentHub)
 export 'src/tr_payment_hub_base.dart' show TrPaymentHub;

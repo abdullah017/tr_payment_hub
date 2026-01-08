@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tr_payment_hub/tr_payment_hub.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+// Note: webview_flutter is used internally by PaymentWebView
 
 void main() => runApp(const ExampleApp());
 
@@ -142,30 +142,37 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   }
 
   Future<void> _process3DSPayment(PaymentRequest request) async {
-    // Step 1: Initialize 3DS - provider returns HTML
+    // Step 1: Initialize 3DS - provider returns HTML or redirect URL
     final threeDSResult = await _paymentProvider!.init3DSPayment(request);
 
     if (!mounted) return;
 
     if (threeDSResult.htmlContent != null ||
         threeDSResult.redirectUrl != null) {
-      // Step 2: Show WebView for user verification
-      final callbackData = await Navigator.push<Map<String, dynamic>>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ThreeDSWebViewScreen(
-            htmlContent: threeDSResult.htmlContent,
-            redirectUrl: threeDSResult.redirectUrl,
-            callbackUrl: request.callbackUrl!,
-          ),
+      // Step 2: Show built-in PaymentWebView for 3DS verification
+      // PaymentWebView.show() handles both iyzico HTML and PayTR iframe URLs
+      final webViewResult = await PaymentWebView.show(
+        context: context,
+        threeDSResult: threeDSResult,
+        callbackUrl: request.callbackUrl!,
+        // Optional: Customize the WebView appearance
+        theme: PaymentWebViewTheme(
+          appBarTitle: '3D Secure Doğrulama',
+          loadingText: 'Banka sayfası yükleniyor...',
+          progressColor: Theme.of(context).colorScheme.primary,
         ),
+        // Optional: Set a custom timeout (default: 5 minutes)
+        timeout: const Duration(minutes: 5),
       );
 
-      if (callbackData != null && mounted) {
+      if (!mounted) return;
+
+      // Handle WebView result
+      if (webViewResult.isSuccess && webViewResult.callbackData != null) {
         // Step 3: Complete payment with callback data
         final result = await _paymentProvider!.complete3DSPayment(
           threeDSResult.transactionId!,
-          callbackData: callbackData,
+          callbackData: webViewResult.callbackData!,
         );
 
         if (mounted) {
@@ -174,8 +181,24 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
             MaterialPageRoute(builder: (_) => ResultScreen(result: result)),
           );
         }
+      } else if (webViewResult.isCancelled) {
+        // User cancelled the 3DS verification
+        _showMessage('Ödeme iptal edildi');
+      } else if (webViewResult.isTimeout) {
+        // 3DS verification timed out
+        _showMessage('3D Secure doğrulama zaman aşımına uğradı');
+      } else if (webViewResult.isError) {
+        // Error occurred during 3DS
+        _showMessage('Hata: ${webViewResult.errorMessage}');
       }
     }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   void _showError(PaymentException e) {
@@ -315,67 +338,14 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   }
 }
 
-/// Step 2: 3DS WebView - Shows bank verification page
-class ThreeDSWebViewScreen extends StatefulWidget {
-  final String? htmlContent;
-  final String? redirectUrl;
-  final String callbackUrl;
-
-  const ThreeDSWebViewScreen({
-    super.key,
-    this.htmlContent,
-    this.redirectUrl,
-    required this.callbackUrl,
-  });
-
-  @override
-  State<ThreeDSWebViewScreen> createState() => _ThreeDSWebViewScreenState();
-}
-
-class _ThreeDSWebViewScreenState extends State<ThreeDSWebViewScreen> {
-  late final WebViewController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (request) {
-            // Intercept callback URL
-            if (request.url.startsWith(widget.callbackUrl)) {
-              final uri = Uri.parse(request.url);
-              Navigator.pop(context, uri.queryParameters);
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      );
-
-    // Load HTML content or redirect URL
-    if (widget.htmlContent != null) {
-      _controller.loadHtmlString(widget.htmlContent!);
-    } else if (widget.redirectUrl != null) {
-      _controller.loadRequest(Uri.parse(widget.redirectUrl!));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('3D Secure Verification'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: WebViewWidget(controller: _controller),
-    );
-  }
-}
+// Note: ThreeDSWebViewScreen is no longer needed!
+// The built-in PaymentWebView.show() handles everything:
+// - iyzico HTML content
+// - PayTR iframe URLs
+// - Callback URL detection
+// - Timeout handling
+// - Cancel confirmation
+// - Customizable theme
 
 /// Step 3: Result Screen - Shows payment result
 class ResultScreen extends StatelessWidget {

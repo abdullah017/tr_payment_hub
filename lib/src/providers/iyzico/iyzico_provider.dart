@@ -12,6 +12,8 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/http_network_client.dart';
+import '../../core/network/network_client.dart';
 import '../../core/payment_provider.dart';
 import 'iyzico_auth.dart';
 import 'iyzico_endpoints.dart';
@@ -20,19 +22,43 @@ import 'iyzico_mapper.dart';
 
 /// iyzico Payment Provider
 ///
-/// Test için özel http.Client kullanabilirsiniz:
+/// ## Usage with Default HTTP Client
+///
+/// ```dart
+/// final provider = IyzicoProvider();
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Usage with Custom NetworkClient (e.g., Dio)
+///
+/// ```dart
+/// final dioClient = DioNetworkClient(); // Your custom implementation
+/// final provider = IyzicoProvider(networkClient: dioClient);
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Testing with Mock HTTP Client
+///
 /// ```dart
 /// final mockClient = PaymentMockClient.iyzico(shouldSucceed: true);
 /// final provider = IyzicoProvider(httpClient: mockClient);
 /// ```
 class IyzicoProvider implements PaymentProvider {
-  /// Test için özel http.Client inject edilebilir
-  IyzicoProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+  /// Creates an [IyzicoProvider] with optional custom [NetworkClient].
+  ///
+  /// [networkClient] - Custom network client (Dio, etc.)
+  /// [httpClient] - Legacy: http.Client for backward compatibility
+  IyzicoProvider({
+    NetworkClient? networkClient,
+    http.Client? httpClient,
+  })  : _customNetworkClient = networkClient,
+        _customHttpClient = httpClient;
 
+  final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
   late IyzicoConfig _config;
   late IyzicoAuth _auth;
-  late http.Client _httpClient;
+  NetworkClient? _networkClient;
   bool _initialized = false;
 
   @override
@@ -56,7 +82,16 @@ class IyzicoProvider implements PaymentProvider {
 
     _config = config;
     _auth = IyzicoAuth(apiKey: config.apiKey, secretKey: config.secretKey);
-    _httpClient = _customHttpClient ?? http.Client();
+
+    // Priority: custom NetworkClient > legacy http.Client > default
+    if (_customNetworkClient != null) {
+      _networkClient = _customNetworkClient;
+    } else if (_customHttpClient != null) {
+      _networkClient = HttpNetworkClient(client: _customHttpClient);
+    } else {
+      _networkClient = HttpNetworkClient();
+    }
+
     _initialized = true;
   }
 
@@ -333,7 +368,8 @@ class IyzicoProvider implements PaymentProvider {
   @override
   void dispose() {
     if (_initialized) {
-      _httpClient.close();
+      _networkClient?.dispose();
+      _networkClient = null;
       _initialized = false;
     }
   }
@@ -358,24 +394,23 @@ class IyzicoProvider implements PaymentProvider {
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final url = Uri.parse('${_config.baseUrl}$endpoint');
+    final url = '${_config.baseUrl}$endpoint';
     final jsonBody = jsonEncode(body);
     final authHeader = _auth.generateAuthorizationHeader(endpoint, jsonBody);
 
     try {
-      final response = await _httpClient
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader,
-              'x-iyzi-rnd': _auth.lastRandomKey,
-            },
-            body: jsonBody,
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _networkClient!.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'x-iyzi-rnd': _auth.lastRandomKey,
+        },
+        body: jsonBody,
+        timeout: const Duration(seconds: 30),
+      );
 
-      if (response.statusCode == 200) {
+      if (response.isSuccess) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
         throw PaymentException.networkError(
@@ -385,10 +420,15 @@ class IyzicoProvider implements PaymentProvider {
       }
     } on PaymentException {
       rethrow;
-    } catch (e) {
-      if (e.toString().contains('TimeoutException')) {
+    } on NetworkException catch (e) {
+      if (e.message.contains('timeout') || e.message.contains('Timeout')) {
         throw PaymentException.timeout(provider: ProviderType.iyzico);
       }
+      throw PaymentException.networkError(
+        providerMessage: e.message,
+        provider: ProviderType.iyzico,
+      );
+    } catch (e) {
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.iyzico,

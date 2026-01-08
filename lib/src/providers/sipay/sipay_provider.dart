@@ -13,6 +13,8 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/http_network_client.dart';
+import '../../core/network/network_client.dart';
 import '../../core/payment_provider.dart';
 import '../../core/utils/payment_utils.dart';
 import 'sipay_auth.dart';
@@ -40,19 +42,36 @@ import 'sipay_mapper.dart';
 /// final result = await provider.createPayment(request);
 /// ```
 ///
-/// Test için özel http.Client kullanabilirsiniz:
+/// ## Usage with Custom NetworkClient (e.g., Dio)
+///
+/// ```dart
+/// final dioClient = DioNetworkClient(); // Your custom implementation
+/// final provider = SipayProvider(networkClient: dioClient);
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Testing with Mock HTTP Client
+///
 /// ```dart
 /// final mockClient = PaymentMockClient.sipay(shouldSucceed: true);
 /// final provider = SipayProvider(httpClient: mockClient);
 /// ```
 class SipayProvider implements PaymentProvider {
-  /// Test için özel http.Client inject edilebilir
-  SipayProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+  /// Creates a [SipayProvider] with optional custom [NetworkClient].
+  ///
+  /// [networkClient] - Custom network client (Dio, etc.)
+  /// [httpClient] - Legacy: http.Client for backward compatibility
+  SipayProvider({
+    NetworkClient? networkClient,
+    http.Client? httpClient,
+  })  : _customNetworkClient = networkClient,
+        _customHttpClient = httpClient;
 
+  final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
   late SipayConfig _config;
   late SipayAuth _auth;
-  late http.Client _httpClient;
+  NetworkClient? _networkClient;
   bool _initialized = false;
   String? _accessToken;
   DateTime? _tokenExpiry;
@@ -82,7 +101,16 @@ class SipayProvider implements PaymentProvider {
       appSecret: config.secretKey,
       merchantKey: config.merchantKey,
     );
-    _httpClient = _customHttpClient ?? http.Client();
+
+    // Priority: custom NetworkClient > legacy http.Client > default
+    if (_customNetworkClient != null) {
+      _networkClient = _customNetworkClient;
+    } else if (_customHttpClient != null) {
+      _networkClient = HttpNetworkClient(client: _customHttpClient);
+    } else {
+      _networkClient = HttpNetworkClient();
+    }
+
     _initialized = true;
   }
 
@@ -398,7 +426,8 @@ class SipayProvider implements PaymentProvider {
   @override
   void dispose() {
     if (_initialized) {
-      _httpClient.close();
+      _networkClient?.dispose();
+      _networkClient = null;
       _accessToken = null;
       _tokenExpiry = null;
       _initialized = false;
@@ -457,28 +486,37 @@ class SipayProvider implements PaymentProvider {
       return _accessToken!;
     }
 
-    final body = {'app_id': _config.apiKey, 'app_secret': _config.secretKey};
+    final body = jsonEncode({
+      'app_id': _config.apiKey,
+      'app_secret': _config.secretKey,
+    });
 
-    final url = Uri.parse('${_config.baseUrl}${SipayEndpoints.token}');
+    final url = '${_config.baseUrl}${SipayEndpoints.token}';
 
-    final response = await _httpClient
-        .post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 30));
+    try {
+      final response = await _networkClient!.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+        timeout: const Duration(seconds: 30),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      _accessToken =
-          data['data']?['token']?.toString() ?? data['token']?.toString();
-      // Token genellikle 1 saat geçerli
-      _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-      return _accessToken!;
-    } else {
-      throw PaymentException.configError(
-        message: 'Token alınamadı: ${response.body}',
+      if (response.isSuccess) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        _accessToken =
+            data['data']?['token']?.toString() ?? data['token']?.toString();
+        // Token genellikle 1 saat geçerli
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+        return _accessToken!;
+      } else {
+        throw PaymentException.configError(
+          message: 'Token alınamadı: ${response.body}',
+          provider: ProviderType.sipay,
+        );
+      }
+    } on NetworkException catch (e) {
+      throw PaymentException.networkError(
+        providerMessage: e.message,
         provider: ProviderType.sipay,
       );
     }
@@ -489,21 +527,20 @@ class SipayProvider implements PaymentProvider {
     Map<String, dynamic> body,
   ) async {
     final token = await _getAccessToken();
-    final url = Uri.parse('${_config.baseUrl}$endpoint');
+    final url = '${_config.baseUrl}$endpoint';
 
     try {
-      final response = await _httpClient
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _networkClient!.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+        timeout: const Duration(seconds: 30),
+      );
 
-      if (response.statusCode == 200) {
+      if (response.isSuccess) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
         throw PaymentException.networkError(
@@ -513,10 +550,15 @@ class SipayProvider implements PaymentProvider {
       }
     } on PaymentException {
       rethrow;
-    } catch (e) {
-      if (e.toString().contains('TimeoutException')) {
+    } on NetworkException catch (e) {
+      if (e.message.contains('timeout') || e.message.contains('Timeout')) {
         throw PaymentException.timeout(provider: ProviderType.sipay);
       }
+      throw PaymentException.networkError(
+        providerMessage: e.message,
+        provider: ProviderType.sipay,
+      );
+    } catch (e) {
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.sipay,

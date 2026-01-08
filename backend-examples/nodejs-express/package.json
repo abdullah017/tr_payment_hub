@@ -12,7 +12,8 @@
     "iyzipay": "^2.1.0",
     "dotenv": "^16.3.1",
     "helmet": "^7.1.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "joi": "^17.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
