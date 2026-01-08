@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-01-08
+
+### Added
+- **PaymentUtils** - Shared utility class eliminating code duplication across providers
+  - `currencyToIso()` - ISO 4217 currency mapping
+  - `currencyToProviderCode()` - Provider-specific currency codes (TL vs TRY)
+  - `amountToCents()` / `amountToCentsString()` - Amount formatting
+  - `parseAmount()` - Safe amount parsing with comma/dot handling
+  - `generateSecureHex()` - Cryptographically secure random hex generation
+  - `generateOrderId()` / `generateConversationId()` - Unique ID generation
+  - `generateDefaultInstallmentOptions()` / `generateDefaultInstallmentInfo()` - Fallback installment data
+  - `isValidBin()` / `extractBin()` - BIN number validation utilities
+- **PaymentConfigProductionValidation** extension - Production environment safety checks
+  - `validateForProduction()` - Returns list of potential issues
+  - `assertProduction()` - Throws if sandbox mode in production
+- **PaymentException.sanitizedProviderMessage** - Filtered error messages (removes SQL, paths, stack traces)
+- **BuyerInfo IPv6 support** - Now validates both IPv4 and IPv6 addresses
+
+### Changed
+- **Network timeout reduced** - 30s → 15s (security hardening against resource exhaustion)
+- **All providers now use PaymentUtils** - Reduced ~120 lines of duplicate code
+  - `PayTRProvider` - Uses PaymentUtils for ID generation, amount formatting, currency mapping
+  - `SipayProvider` - Uses PaymentUtils for currency mapping, installment defaults
+  - `ParamProvider` - Uses PaymentUtils for ID generation, amount formatting, installment defaults
+- **LogSanitizer card pattern improved** - Now correctly masks 13-19 digit card numbers (was 14-20)
+
+### Security
+- **CardInfo.toJson() @Deprecated warning** - Warns developers about PAN/CVV exposure risk
+- **Param SHA1 security documentation** - Added warning about SHA1 being cryptographically weak (Param API requirement)
+- **Provider message sanitization** - Filters potentially sensitive data from error messages
+
+### Documentation
+- Added comprehensive dartdoc to PaymentUtils class
+- Updated provider classes with PaymentUtils usage examples
+
 ## [2.0.0] - 2026-01-08
 
 ### Breaking Changes
@@ -177,7 +212,8 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...v2.0.0
 [1.0.4]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.2...v1.0.3

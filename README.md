@@ -33,7 +33,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tr_payment_hub: ^1.0.3
+  tr_payment_hub: ^2.0.1
 ```
 
 Then run:
@@ -267,18 +267,23 @@ final failingProvider = TrPaymentHub.createMock(
 ### Running Tests
 
 ```bash
-# Run all unit tests
+# Run all unit tests (245 tests)
 dart test
 
 # Run with coverage
 dart test --coverage=coverage
 
-# Run integration tests (requires credentials)
+# Run integration tests (requires sandbox credentials)
 export IYZICO_MERCHANT_ID=xxx
 export IYZICO_API_KEY=xxx
 export IYZICO_SECRET_KEY=xxx
 dart test --tags=integration
+
+# Quick real payment test
+dart scripts/test_real_payment.dart
 ```
+
+> 📖 **Full Testing Guide:** See [TESTING.md](TESTING.md) for sandbox setup and integration testing.
 
 ## Test Cards
 
@@ -313,11 +318,60 @@ Use these test card numbers in sandbox environments:
 - Use `LogSanitizer.sanitize()` before logging any payment data
 - Always use HTTPS callback URLs
 - Store API keys securely (environment variables, secure storage)
+- Use `CardInfo.toSafeJson()` instead of `toJson()` for logging
+- Validate production config before deployment
 
 ```dart
 // Safe logging
 final safeLog = LogSanitizer.sanitize(sensitiveData);
 final safeMap = LogSanitizer.sanitizeMap(requestData);
+
+// Safe card JSON (masks card number and CVV)
+final safeCard = cardInfo.toSafeJson();
+
+// Production validation
+final issues = config.validateForProduction();
+if (issues.isNotEmpty) {
+  print('Warning: $issues');
+}
+config.assertProduction(); // Throws if sandbox mode
+```
+
+## v2.0 Features
+
+### Input Validation
+All models now have `validate()` methods that throw `ValidationException`:
+
+```dart
+try {
+  cardInfo.validate(); // Luhn check, expiry date, CVV format
+  buyerInfo.validate(); // Email, phone (TR format), TC Kimlik
+  paymentRequest.validate(); // Amount, installment range, basket total
+} on ValidationException catch (e) {
+  print('Validation errors: ${e.allErrors}');
+}
+```
+
+### Retry & Circuit Breaker
+Built-in fault tolerance patterns:
+
+```dart
+// Retry with exponential backoff
+final handler = RetryHandler(config: RetryConfig.conservative);
+final result = await handler.execute(() => provider.createPayment(request));
+
+// Circuit breaker for cascading failure prevention
+final breaker = CircuitBreaker(name: 'payment');
+final result = await breaker.execute(() => provider.createPayment(request));
+```
+
+### PaymentLogger
+Secure logging with automatic sanitization:
+
+```dart
+final logger = PaymentLogger(minLevel: LogLevel.info);
+logger.logPaymentRequest(request); // Auto-masks sensitive data
+logger.logPaymentResponse(result);
 ```
 
 ## Flutter Web Notice
