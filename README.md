@@ -21,7 +21,9 @@ Unified Turkish payment gateway integration for Flutter/Dart applications.
 ## Features
 
 - **Unified API** - Single interface for all payment providers
+- **PaymentWebView** - Built-in 3DS WebView widget for Flutter apps (v3.1+)
 - **Proxy Mode** - Secure Flutter + Custom Backend architecture (v3.0+)
+- **NetworkClient** - HTTP client abstraction (Dio, http, or custom) (v3.1+)
 - **Type Safe** - Full Dart null safety support
 - **Secure** - Automatic sensitive data masking with LogSanitizer
 - **Testable** - Built-in MockPaymentProvider for unit testing
@@ -108,7 +110,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tr_payment_hub: ^2.0.1
+  tr_payment_hub: ^3.1.0
 ```
 
 Then run:
@@ -238,17 +240,28 @@ final threeDSResult = await provider.init3DSPayment(
   request.copyWith(callbackUrl: 'https://yoursite.com/3ds-callback'),
 );
 
-if (threeDSResult.needsWebView) {
-  // Step 2: Display in WebView
-  // iyzico: Use threeDSResult.htmlContent
-  // PayTR/Sipay: Redirect to threeDSResult.redirectUrl
-}
+// Step 2: Show built-in PaymentWebView (v3.1+)
+final webViewResult = await PaymentWebView.show(
+  context: context,
+  threeDSResult: threeDSResult,
+  callbackUrl: 'https://yoursite.com/3ds-callback',
+  theme: PaymentWebViewTheme(
+    appBarTitle: '3D Secure',
+    loadingText: 'Loading bank page...',
+  ),
+);
 
 // Step 3: Complete after callback
-final result = await provider.complete3DSPayment(
-  threeDSResult.transactionId!,
-  callbackData: receivedCallbackData,
-);
+if (webViewResult.isSuccess) {
+  final result = await provider.complete3DSPayment(
+    threeDSResult.transactionId!,
+    callbackData: webViewResult.callbackData!,
+  );
+} else if (webViewResult.isCancelled) {
+  // User cancelled
+} else if (webViewResult.isTimeout) {
+  // Timed out
+}
 ```
 
 ### 5. Query Installments
@@ -410,6 +423,69 @@ if (issues.isNotEmpty) {
   print('Warning: $issues');
 }
 config.assertProduction(); // Throws if sandbox mode
+```
+
+## v3.1 Features
+
+### PaymentWebView Widget
+Built-in 3DS WebView for Flutter apps - no more custom WebView code needed:
+
+```dart
+// Show 3DS in full-screen modal
+final result = await PaymentWebView.show(
+  context: context,
+  threeDSResult: threeDSResult,
+  callbackUrl: 'https://yoursite.com/callback',
+  theme: PaymentWebViewTheme(
+    appBarTitle: '3D Secure Verification',
+    loadingText: 'Loading bank page...',
+    progressColor: Colors.blue,
+  ),
+  timeout: Duration(minutes: 5),
+);
+
+// Or show as bottom sheet
+final result = await PaymentWebView.showBottomSheet(...);
+
+// Handle result
+if (result.isSuccess) {
+  // Complete payment with result.callbackData
+} else if (result.isCancelled) {
+  // User closed the WebView
+} else if (result.isTimeout) {
+  // Exceeded timeout
+}
+```
+
+### NetworkClient Interface
+HTTP client abstraction for using Dio or custom implementations:
+
+```dart
+// Default: Uses http package
+final provider = IyzicoProvider();
+
+// Custom: Use Dio (implement NetworkClient)
+class DioNetworkClient implements NetworkClient {
+  final Dio _dio = Dio();
+
+  @override
+  Future<NetworkResponse> post(String url, {
+    Map<String, String>? headers,
+    dynamic body,
+    Duration? timeout,
+  }) async {
+    final response = await _dio.post(url, data: body);
+    return NetworkResponse(
+      statusCode: response.statusCode ?? 500,
+      body: response.data.toString(),
+      headers: response.headers.map.map((k, v) => MapEntry(k, v.join(','))),
+    );
+  }
+  // ... implement other methods
+}
+
+// Use with any provider
+final provider = IyzicoProvider(networkClient: DioNetworkClient());
 ```
 
 ## v2.0 Features

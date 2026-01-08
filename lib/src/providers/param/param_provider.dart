@@ -10,6 +10,8 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/http_network_client.dart';
+import '../../core/network/network_client.dart';
 import '../../core/payment_provider.dart';
 import '../../core/utils/payment_utils.dart';
 import 'param_auth.dart';
@@ -36,19 +38,36 @@ import 'param_mapper.dart';
 /// final result = await provider.createPayment(request);
 /// ```
 ///
-/// Test için özel http.Client kullanabilirsiniz:
+/// ## Usage with Custom NetworkClient (e.g., Dio)
+///
+/// ```dart
+/// final dioClient = DioNetworkClient(); // Your custom implementation
+/// final provider = ParamProvider(networkClient: dioClient);
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Testing with Mock HTTP Client
+///
 /// ```dart
 /// final mockClient = PaymentMockClient.param(shouldSucceed: true);
 /// final provider = ParamProvider(httpClient: mockClient);
 /// ```
 class ParamProvider implements PaymentProvider {
-  /// Test için özel http.Client inject edilebilir
-  ParamProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+  /// Creates a [ParamProvider] with optional custom [NetworkClient].
+  ///
+  /// [networkClient] - Custom network client (Dio, etc.)
+  /// [httpClient] - Legacy: http.Client for backward compatibility
+  ParamProvider({
+    NetworkClient? networkClient,
+    http.Client? httpClient,
+  })  : _customNetworkClient = networkClient,
+        _customHttpClient = httpClient;
 
+  final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
   late ParamConfig _config;
   late ParamAuth _auth;
-  late http.Client _httpClient;
+  NetworkClient? _networkClient;
   bool _initialized = false;
 
   @override
@@ -77,7 +96,16 @@ class ParamProvider implements PaymentProvider {
       clientPassword: config.secretKey,
       guid: config.guid,
     );
-    _httpClient = _customHttpClient ?? http.Client();
+
+    // Priority: custom NetworkClient > legacy http.Client > default
+    if (_customNetworkClient != null) {
+      _networkClient = _customNetworkClient;
+    } else if (_customHttpClient != null) {
+      _networkClient = HttpNetworkClient(client: _customHttpClient);
+    } else {
+      _networkClient = HttpNetworkClient();
+    }
+
     _initialized = true;
   }
 
@@ -356,7 +384,8 @@ class ParamProvider implements PaymentProvider {
   @override
   void dispose() {
     if (_initialized) {
-      _httpClient.close();
+      _networkClient?.dispose();
+      _networkClient = null;
       _initialized = false;
     }
   }
@@ -396,21 +425,20 @@ class ParamProvider implements PaymentProvider {
       PaymentUtils.generateDefaultInstallmentInfo(binNumber, amount);
 
   Future<String> _postSoap(String soapAction, String body) async {
-    final url = Uri.parse('${_config.baseUrl}${ParamEndpoints.servicePath}');
+    final url = '${_config.baseUrl}${ParamEndpoints.servicePath}';
 
     try {
-      final response = await _httpClient
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'text/xml; charset=utf-8',
-              'SOAPAction': soapAction,
-            },
-            body: body,
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _networkClient!.post(
+        url,
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': soapAction,
+        },
+        body: body,
+        timeout: const Duration(seconds: 15),
+      );
 
-      if (response.statusCode == 200) {
+      if (response.isSuccess) {
         return response.body;
       } else {
         throw PaymentException.networkError(
@@ -420,10 +448,15 @@ class ParamProvider implements PaymentProvider {
       }
     } on PaymentException {
       rethrow;
-    } catch (e) {
-      if (e.toString().contains('TimeoutException')) {
+    } on NetworkException catch (e) {
+      if (e.message.contains('timeout') || e.message.contains('Timeout')) {
         throw PaymentException.timeout(provider: ProviderType.param);
       }
+      throw PaymentException.networkError(
+        providerMessage: e.message,
+        provider: ProviderType.param,
+      );
+    } catch (e) {
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.param,

@@ -13,6 +13,8 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/http_network_client.dart';
+import '../../core/network/network_client.dart';
 import '../../core/payment_provider.dart';
 import '../../core/utils/payment_utils.dart';
 import 'paytr_auth.dart';
@@ -22,19 +24,43 @@ import 'paytr_mapper.dart';
 
 /// PayTR Payment Provider
 ///
-/// Test için özel http.Client kullanabilirsiniz:
+/// ## Usage with Default HTTP Client
+///
+/// ```dart
+/// final provider = PayTRProvider();
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Usage with Custom NetworkClient (e.g., Dio)
+///
+/// ```dart
+/// final dioClient = DioNetworkClient(); // Your custom implementation
+/// final provider = PayTRProvider(networkClient: dioClient);
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Testing with Mock HTTP Client
+///
 /// ```dart
 /// final mockClient = PaymentMockClient.paytr(shouldSucceed: true);
 /// final provider = PayTRProvider(httpClient: mockClient);
 /// ```
 class PayTRProvider implements PaymentProvider {
-  /// Test için özel http.Client inject edilebilir
-  PayTRProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+  /// Creates a [PayTRProvider] with optional custom [NetworkClient].
+  ///
+  /// [networkClient] - Custom network client (Dio, etc.)
+  /// [httpClient] - Legacy: http.Client for backward compatibility
+  PayTRProvider({
+    NetworkClient? networkClient,
+    http.Client? httpClient,
+  })  : _customNetworkClient = networkClient,
+        _customHttpClient = httpClient;
 
+  final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
   late PayTRConfig _config;
   late PayTRAuth _auth;
-  late http.Client _httpClient;
+  NetworkClient? _networkClient;
   bool _initialized = false;
 
   // Bekleyen işlemleri takip etmek için
@@ -65,7 +91,16 @@ class PayTRProvider implements PaymentProvider {
       merchantKey: config.apiKey,
       merchantSalt: config.secretKey,
     );
-    _httpClient = _customHttpClient ?? http.Client();
+
+    // Priority: custom NetworkClient > legacy http.Client > default
+    if (_customNetworkClient != null) {
+      _networkClient = _customNetworkClient;
+    } else if (_customHttpClient != null) {
+      _networkClient = HttpNetworkClient(client: _customHttpClient);
+    } else {
+      _networkClient = HttpNetworkClient();
+    }
+
     _initialized = true;
   }
 
@@ -399,7 +434,8 @@ class PayTRProvider implements PaymentProvider {
   @override
   void dispose() {
     if (_initialized) {
-      _httpClient.close();
+      _networkClient?.dispose();
+      _networkClient = null;
       _pendingPayments.clear();
       _initialized = false;
     }
@@ -455,18 +491,16 @@ class PayTRProvider implements PaymentProvider {
     String endpoint,
     Map<String, String> body,
   ) async {
-    final url = Uri.parse('${PayTREndpoints.baseUrl}$endpoint');
+    final url = '${PayTREndpoints.baseUrl}$endpoint';
 
     try {
-      final response = await _httpClient
-          .post(
-            url,
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: body,
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _networkClient!.postForm(
+        url,
+        fields: body,
+        timeout: const Duration(seconds: 30),
+      );
 
-      if (response.statusCode == 200) {
+      if (response.isSuccess) {
         try {
           return jsonDecode(response.body) as Map<String, dynamic>;
         } catch (_) {
@@ -480,10 +514,15 @@ class PayTRProvider implements PaymentProvider {
       }
     } on PaymentException {
       rethrow;
-    } catch (e) {
-      if (e.toString().contains('TimeoutException')) {
+    } on NetworkException catch (e) {
+      if (e.message.contains('timeout') || e.message.contains('Timeout')) {
         throw PaymentException.timeout(provider: ProviderType.paytr);
       }
+      throw PaymentException.networkError(
+        providerMessage: e.message,
+        provider: ProviderType.paytr,
+      );
+    } catch (e) {
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.paytr,

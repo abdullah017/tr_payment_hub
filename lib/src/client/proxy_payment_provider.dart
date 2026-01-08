@@ -13,6 +13,8 @@ import '../core/models/payment_result.dart';
 import '../core/models/refund_request.dart';
 import '../core/models/saved_card.dart';
 import '../core/models/three_ds_result.dart';
+import '../core/network/http_network_client.dart';
+import '../core/network/network_client.dart';
 import '../core/payment_provider.dart';
 import 'proxy_config.dart';
 
@@ -65,15 +67,20 @@ class ProxyPaymentProvider implements PaymentProvider {
   /// Creates a new [ProxyPaymentProvider] instance.
   ///
   /// [config] - Proxy configuration (baseUrl, auth token, etc.)
-  /// [httpClient] - Optional HTTP client for testing
+  /// [networkClient] - Optional custom network client (Dio, etc.)
+  /// [httpClient] - Legacy: Optional http.Client for testing
   ProxyPaymentProvider({
     required ProxyConfig config,
+    NetworkClient? networkClient,
     http.Client? httpClient,
   })  : _config = config,
-        _httpClient = httpClient ?? http.Client();
+        _customNetworkClient = networkClient,
+        _customHttpClient = httpClient;
 
   final ProxyConfig _config;
-  final http.Client _httpClient;
+  final NetworkClient? _customNetworkClient;
+  final http.Client? _customHttpClient;
+  NetworkClient? _networkClient;
 
   bool _initialized = false;
   ProviderType? _providerType;
@@ -113,6 +120,7 @@ class ProxyPaymentProvider implements PaymentProvider {
       _providerType = _config.defaultProvider;
     }
 
+    _initializeNetworkClient();
     _initialized = true;
   }
 
@@ -131,7 +139,19 @@ class ProxyPaymentProvider implements PaymentProvider {
       );
     }
     _providerType = provider;
+    _initializeNetworkClient();
     _initialized = true;
+  }
+
+  void _initializeNetworkClient() {
+    // Priority: custom NetworkClient > legacy http.Client > default
+    if (_customNetworkClient != null) {
+      _networkClient = _customNetworkClient;
+    } else if (_customHttpClient != null) {
+      _networkClient = HttpNetworkClient(client: _customHttpClient);
+    } else {
+      _networkClient = HttpNetworkClient();
+    }
   }
 
   // ==================== Payment Operations ====================
@@ -279,7 +299,8 @@ class ProxyPaymentProvider implements PaymentProvider {
 
   @override
   void dispose() {
-    _httpClient.close();
+    _networkClient?.dispose();
+    _networkClient = null;
     _initialized = false;
   }
 
@@ -321,35 +342,39 @@ class ProxyPaymentProvider implements PaymentProvider {
     Map<String, dynamic>? body,
     Map<String, String>? queryParams,
   }) async {
-    var url = Uri.parse('${_config.baseUrl}$endpoint');
+    var url = '${_config.baseUrl}$endpoint';
 
     if (queryParams != null && queryParams.isNotEmpty) {
-      url = url.replace(queryParameters: queryParams);
+      final uri = Uri.parse(url).replace(queryParameters: queryParams);
+      url = uri.toString();
     }
 
     var retryCount = 0;
 
     while (true) {
       try {
-        http.Response response;
+        NetworkResponse response;
 
         switch (method) {
           case 'POST':
-            response = await _httpClient
-                .post(
-                  url,
-                  headers: _config.allHeaders,
-                  body: jsonEncode(body),
-                )
-                .timeout(_config.timeout);
+            response = await _networkClient!.post(
+              url,
+              headers: _config.allHeaders,
+              body: jsonEncode(body),
+              timeout: _config.timeout,
+            );
           case 'GET':
-            response = await _httpClient
-                .get(url, headers: _config.allHeaders)
-                .timeout(_config.timeout);
+            response = await _networkClient!.get(
+              url,
+              headers: _config.allHeaders,
+              timeout: _config.timeout,
+            );
           case 'DELETE':
-            response = await _httpClient
-                .delete(url, headers: _config.allHeaders)
-                .timeout(_config.timeout);
+            response = await _networkClient!.delete(
+              url,
+              headers: _config.allHeaders,
+              timeout: _config.timeout,
+            );
           default:
             throw PaymentException(
               code: 'invalid_method',
@@ -358,21 +383,23 @@ class ProxyPaymentProvider implements PaymentProvider {
         }
 
         return _handleResponse(response);
-      } on TimeoutException {
-        if (retryCount >= _config.maxRetries) {
-          throw PaymentException.timeout(provider: _providerType);
+      } on NetworkException catch (e) {
+        if (e.message.contains('timeout') || e.message.contains('Timeout')) {
+          if (retryCount >= _config.maxRetries) {
+            throw PaymentException.timeout(provider: _providerType);
+          }
+          retryCount++;
+          await Future<void>.delayed(_config.retryDelay);
+        } else {
+          if (retryCount >= _config.maxRetries) {
+            throw PaymentException.networkError(
+              providerMessage: e.message,
+              provider: _providerType,
+            );
+          }
+          retryCount++;
+          await Future<void>.delayed(_config.retryDelay);
         }
-        retryCount++;
-        await Future<void>.delayed(_config.retryDelay);
-      } on http.ClientException catch (e) {
-        if (retryCount >= _config.maxRetries) {
-          throw PaymentException.networkError(
-            providerMessage: e.message,
-            provider: _providerType,
-          );
-        }
-        retryCount++;
-        await Future<void>.delayed(_config.retryDelay);
       } on PaymentException {
         rethrow;
       } catch (e) {
@@ -385,7 +412,7 @@ class ProxyPaymentProvider implements PaymentProvider {
     }
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  Map<String, dynamic> _handleResponse(NetworkResponse response) {
     Map<String, dynamic> body;
 
     try {
@@ -401,7 +428,7 @@ class ProxyPaymentProvider implements PaymentProvider {
       );
     }
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.isSuccess) {
       if (body['success'] == false) {
         throw PaymentException(
           code: body['errorCode']?.toString() ?? 'backend_error',
