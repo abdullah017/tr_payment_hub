@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:http/http.dart' as http;
 
 import '../../core/config.dart';
@@ -13,6 +11,7 @@ import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import '../../core/payment_provider.dart';
+import '../../core/utils/payment_utils.dart';
 import 'param_auth.dart';
 import 'param_endpoints.dart';
 import 'param_error_mapper.dart';
@@ -375,72 +374,26 @@ class ParamProvider implements PaymentProvider {
     }
   }
 
-  /// Generates a unique order ID using secure random
-  String _generateOrderId() {
-    final random = Random.secure();
-    final randomBytes = List<int>.generate(6, (_) => random.nextInt(256));
-    final randomHex =
-        randomBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    return 'PARAM${DateTime.now().millisecondsSinceEpoch}_$randomHex';
-  }
+  /// Generates a unique order ID using PaymentUtils
+  String _generateOrderId() => PaymentUtils.generateOrderId(prefix: 'PARAM');
 
-  String _formatAmount(double amount) => (amount * 100).round().toString();
+  /// Formats amount to cents string using PaymentUtils
+  String _formatAmount(double amount) => PaymentUtils.amountToCentsString(amount);
 
+  /// Parses cents amount from API response
   double _parseAmount(String? value) {
     if (value == null || value.isEmpty) return 0;
-    final cents = double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    // Param returns amount in cents, so we parse and divide by 100
+    final cents = PaymentUtils.parseAmount(value);
     return cents / 100;
   }
 
+  /// Uses shared PaymentUtils for default installment info
   InstallmentInfo _generateDefaultInstallmentInfo(
     String binNumber,
     double amount,
   ) =>
-      InstallmentInfo(
-        binNumber: binNumber,
-        price: amount,
-        cardType: CardType.creditCard,
-        cardAssociation: CardAssociation.visa,
-        cardFamily: 'Unknown',
-        bankName: 'Unknown',
-        bankCode: 0,
-        force3DS: true,
-        forceCVC: true,
-        options: _generateDefaultInstallmentOptions(amount),
-      );
-
-  List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) => [
-        InstallmentOption(
-          installmentNumber: 1,
-          installmentPrice: amount,
-          totalPrice: amount,
-        ),
-        InstallmentOption(
-          installmentNumber: 2,
-          installmentPrice: amount / 2 * 1.02,
-          totalPrice: amount * 1.02,
-        ),
-        InstallmentOption(
-          installmentNumber: 3,
-          installmentPrice: amount / 3 * 1.03,
-          totalPrice: amount * 1.03,
-        ),
-        InstallmentOption(
-          installmentNumber: 6,
-          installmentPrice: amount / 6 * 1.05,
-          totalPrice: amount * 1.05,
-        ),
-        InstallmentOption(
-          installmentNumber: 9,
-          installmentPrice: amount / 9 * 1.07,
-          totalPrice: amount * 1.07,
-        ),
-        InstallmentOption(
-          installmentNumber: 12,
-          installmentPrice: amount / 12 * 1.10,
-          totalPrice: amount * 1.10,
-        ),
-      ];
+      PaymentUtils.generateDefaultInstallmentInfo(binNumber, amount);
 
   Future<String> _postSoap(String soapAction, String body) async {
     final url = Uri.parse('${_config.baseUrl}${ParamEndpoints.servicePath}');
@@ -455,7 +408,7 @@ class ParamProvider implements PaymentProvider {
             },
             body: body,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         return response.body;

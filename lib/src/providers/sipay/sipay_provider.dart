@@ -14,6 +14,7 @@ import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import '../../core/payment_provider.dart';
+import '../../core/utils/payment_utils.dart';
 import 'sipay_auth.dart';
 import 'sipay_endpoints.dart';
 import 'sipay_error_mapper.dart';
@@ -426,73 +427,20 @@ class SipayProvider implements PaymentProvider {
     return 'SIP${DateTime.now().millisecondsSinceEpoch}_$randomHex';
   }
 
-  String _mapCurrency(Currency currency) {
-    switch (currency) {
-      case Currency.tryLira:
-        return 'TRY';
-      case Currency.usd:
-        return 'USD';
-      case Currency.eur:
-        return 'EUR';
-      case Currency.gbp:
-        return 'GBP';
-    }
-  }
+  /// Maps currency using shared PaymentUtils
+  String _mapCurrency(Currency currency) => PaymentUtils.currencyToIso(currency);
 
   double _parseDouble(String? value) {
     if (value == null || value.isEmpty) return 0;
     return double.tryParse(value) ?? 0;
   }
 
+  /// Uses shared PaymentUtils for default installment info
   InstallmentInfo _generateDefaultInstallmentInfo(
     String binNumber,
     double amount,
   ) =>
-      InstallmentInfo(
-        binNumber: binNumber,
-        price: amount,
-        cardType: CardType.creditCard,
-        cardAssociation: CardAssociation.visa,
-        cardFamily: 'Unknown',
-        bankName: 'Unknown',
-        bankCode: 0,
-        force3DS: true,
-        forceCVC: true,
-        options: _generateDefaultInstallmentOptions(amount),
-      );
-
-  List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) => [
-        InstallmentOption(
-          installmentNumber: 1,
-          installmentPrice: amount,
-          totalPrice: amount,
-        ),
-        InstallmentOption(
-          installmentNumber: 2,
-          installmentPrice: amount / 2 * 1.02,
-          totalPrice: amount * 1.02,
-        ),
-        InstallmentOption(
-          installmentNumber: 3,
-          installmentPrice: amount / 3 * 1.03,
-          totalPrice: amount * 1.03,
-        ),
-        InstallmentOption(
-          installmentNumber: 6,
-          installmentPrice: amount / 6 * 1.05,
-          totalPrice: amount * 1.05,
-        ),
-        InstallmentOption(
-          installmentNumber: 9,
-          installmentPrice: amount / 9 * 1.07,
-          totalPrice: amount * 1.07,
-        ),
-        InstallmentOption(
-          installmentNumber: 12,
-          installmentPrice: amount / 12 * 1.10,
-          totalPrice: amount * 1.10,
-        ),
-      ];
+      PaymentUtils.generateDefaultInstallmentInfo(binNumber, amount);
 
   /// Token yenileme gerekli mi kontrol et
   bool _needsTokenRefresh() {
