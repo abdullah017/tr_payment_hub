@@ -1,6 +1,29 @@
 import '../enums.dart';
 
-/// Ödeme hatası
+/// Ödeme hatası.
+///
+/// Tüm ödeme ile ilgili hataları temsil eder. Factory constructor'lar
+/// yaygın hata senaryoları için önceden tanımlanmış mesajlar sunar.
+///
+/// ## Güvenlik Notu
+///
+/// [providerMessage] alanı API'den gelen ham hata mesajlarını içerebilir.
+/// Bu mesajlar kullanıcı arayüzünde doğrudan gösterilmemeli, bunun yerine
+/// [userFriendlyMessage] kullanılmalıdır.
+///
+/// ## Örnek
+///
+/// ```dart
+/// try {
+///   await provider.createPayment(request);
+/// } on PaymentException catch (e) {
+///   // Kullanıcıya göster
+///   showError(e.userFriendlyMessage);
+///
+///   // Debug için logla
+///   print(e.debugInfo);
+/// }
+/// ```
 class PaymentException implements Exception {
   const PaymentException({
     required this.code,
@@ -9,6 +32,26 @@ class PaymentException implements Exception {
     this.providerMessage,
     this.provider,
   });
+
+  /// Creates a PaymentException with sanitized provider message.
+  ///
+  /// Use this factory when the provider message may contain sensitive
+  /// information that should be filtered before storage/logging.
+  factory PaymentException.withSanitizedMessage({
+    required String code,
+    required String message,
+    String? providerCode,
+    String? providerMessage,
+    ProviderType? provider,
+  }) =>
+      PaymentException(
+        code: code,
+        message: message,
+        providerCode: providerCode,
+        providerMessage:
+            providerMessage != null ? _sanitizeMessage(providerMessage) : null,
+        provider: provider,
+      );
 
   // ============================================
   // Factory Constructors - Common Errors
@@ -141,11 +184,75 @@ class PaymentException implements Exception {
   @override
   String toString() => 'PaymentException($code): $message';
 
-  /// Kullanıcıya gösterilebilir mesaj
+  /// Kullanıcıya gösterilebilir mesaj.
+  ///
+  /// Her zaman güvenli, kullanıcı dostu bir mesaj döndürür.
+  /// Teknik detaylar veya hassas bilgiler içermez.
   String get userFriendlyMessage => message;
 
-  /// Debug için detaylı bilgi
+  /// Provider mesajının sanitize edilmiş versiyonu.
+  ///
+  /// Potansiyel hassas bilgileri (SQL, dosya yolları, stack trace vb.)
+  /// filtreler ve güvenli bir mesaj döndürür.
+  String? get sanitizedProviderMessage =>
+      providerMessage != null ? _sanitizeMessage(providerMessage!) : null;
+
+  /// Debug için detaylı bilgi.
+  ///
+  /// **UYARI:** Bu metod hassas bilgiler içerebilir.
+  /// Sadece geliştirme/debug amaçlı kullanın, production log'larına yazmayın.
   String get debugInfo => 'PaymentException(code: $code, message: $message, '
       'providerCode: $providerCode, providerMessage: $providerMessage, '
       'provider: $provider)';
+
+  /// Sanitizes provider messages to remove potentially sensitive information.
+  ///
+  /// Removes:
+  /// * SQL keywords (SELECT, INSERT, etc.)
+  /// * File paths (Unix and Windows)
+  /// * Stack trace patterns
+  /// * Long messages (truncated to 500 chars)
+  static String _sanitizeMessage(String message) {
+    var sanitized = message;
+
+    // Remove SQL-like patterns
+    sanitized = sanitized.replaceAll(
+      RegExp(
+        r'\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|EXEC|EXECUTE)\b',
+        caseSensitive: false,
+      ),
+      '[FILTERED]',
+    );
+
+    // Remove file paths (Unix style)
+    sanitized = sanitized.replaceAll(
+      RegExp(r'/(?:[\w\-./]+)+'),
+      '[PATH]',
+    );
+
+    // Remove file paths (Windows style)
+    sanitized = sanitized.replaceAll(
+      RegExp(r'[A-Z]:\\(?:[\w\-\\]+)+', caseSensitive: false),
+      '[PATH]',
+    );
+
+    // Remove stack trace patterns
+    sanitized = sanitized.replaceAll(
+      RegExp(r'at\s+[\w.$<>]+\([^)]*\)'),
+      '',
+    );
+
+    // Remove common sensitive patterns
+    sanitized = sanitized.replaceAll(
+      RegExp(r'(password|secret|key|token)\s*[=:]\s*\S+', caseSensitive: false),
+      r'$1=[REDACTED]',
+    );
+
+    // Truncate long messages
+    if (sanitized.length > 500) {
+      sanitized = '${sanitized.substring(0, 500)}... [truncated]';
+    }
+
+    return sanitized.trim();
+  }
 }

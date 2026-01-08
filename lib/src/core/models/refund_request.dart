@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '../enums.dart';
+import '../exceptions/validation_exception.dart';
 
 /// Request model for processing refunds.
 ///
@@ -94,6 +95,49 @@ class RefundRequest {
   ///
   /// Provider-specific data or custom fields for your records.
   final Map<String, dynamic>? metadata;
+
+  /// IP address regex pattern (IPv4)
+  static final _ipRegex = RegExp(
+    r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
+  );
+
+  /// Maximum allowed refund amount
+  static const double maxAmount = 999999.99;
+
+  /// Validates the refund request and throws [ValidationException] if invalid.
+  ///
+  /// Validates:
+  /// * Transaction ID is not empty
+  /// * Amount is positive and within limits
+  /// * IP (if provided) is valid format
+  ///
+  /// Throws [ValidationException] with all validation errors.
+  void validate() {
+    final errors = <String>[];
+
+    // Transaction ID validation
+    if (transactionId.isEmpty) {
+      errors.add('transactionId cannot be empty');
+    }
+
+    // Amount validation
+    if (amount <= 0) {
+      errors.add('refund amount must be greater than 0');
+    } else if (amount > maxAmount) {
+      errors.add('refund amount cannot exceed $maxAmount');
+    }
+
+    // IP validation (if provided)
+    if (ip != null && ip!.isNotEmpty) {
+      if (!_ipRegex.hasMatch(ip!) && ip != '127.0.0.1' && ip != '::1') {
+        errors.add('IP format is invalid');
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors: errors);
+    }
+  }
 
   /// Converts this instance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
