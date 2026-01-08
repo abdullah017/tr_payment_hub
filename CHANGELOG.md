@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-01-08
+
+### Added
+- **PaymentUtils** - Shared utility class eliminating code duplication across providers
+  - `currencyToIso()` - ISO 4217 currency mapping
+  - `currencyToProviderCode()` - Provider-specific currency codes (TL vs TRY)
+  - `amountToCents()` / `amountToCentsString()` - Amount formatting
+  - `parseAmount()` - Safe amount parsing with comma/dot handling
+  - `generateSecureHex()` - Cryptographically secure random hex generation
+  - `generateOrderId()` / `generateConversationId()` - Unique ID generation
+  - `generateDefaultInstallmentOptions()` / `generateDefaultInstallmentInfo()` - Fallback installment data
+  - `isValidBin()` / `extractBin()` - BIN number validation utilities
+- **PaymentConfigProductionValidation** extension - Production environment safety checks
+  - `validateForProduction()` - Returns list of potential issues
+  - `assertProduction()` - Throws if sandbox mode in production
+- **PaymentException.sanitizedProviderMessage** - Filtered error messages (removes SQL, paths, stack traces)
+- **BuyerInfo IPv6 support** - Now validates both IPv4 and IPv6 addresses
+
+### Changed
+- **Network timeout reduced** - 30s → 15s (security hardening against resource exhaustion)
+- **All providers now use PaymentUtils** - Reduced ~120 lines of duplicate code
+  - `PayTRProvider` - Uses PaymentUtils for ID generation, amount formatting, currency mapping
+  - `SipayProvider` - Uses PaymentUtils for currency mapping, installment defaults
+  - `ParamProvider` - Uses PaymentUtils for ID generation, amount formatting, installment defaults
+- **LogSanitizer card pattern improved** - Now correctly masks 13-19 digit card numbers (was 14-20)
+
+### Security
+- **CardInfo.toJson() @Deprecated warning** - Warns developers about PAN/CVV exposure risk
+- **Param SHA1 security documentation** - Added warning about SHA1 being cryptographically weak (Param API requirement)
+- **Provider message sanitization** - Filters potentially sensitive data from error messages
+
+### Documentation
+- Added comprehensive dartdoc to PaymentUtils class
+- Updated provider classes with PaymentUtils usage examples
+
+## [2.0.0] - 2026-01-08
+
+### Breaking Changes
+- **Validation is now mandatory** - All model classes (`CardInfo`, `BuyerInfo`, `PaymentRequest`, `RefundRequest`) now have `validate()` methods that throw `ValidationException` for invalid input
+- **CardInfo.toJson() is now @internal** - Use `toSafeJson()` for logging which masks sensitive data (CVV, card number)
+- **Config classes updated** - New optional parameters: `connectionTimeout` and `enableRetry`
+- **New exception types** - `ValidationException` and `CircuitBreakerOpenException` added
+
+### Added
+- **ValidationException** - Comprehensive input validation with detailed error messages
+  - `errors` list for multiple validation errors
+  - `field` property to identify the invalid field
+  - `allErrors` getter for combined error message
+- **RetryHandler** - Exponential backoff retry mechanism
+  - `RetryConfig.noRetry` - Single attempt only
+  - `RetryConfig.conservative` - Safe retry for payment operations
+  - `RetryConfig.aggressive` - Fast retry for read operations
+  - Jitter support to prevent thundering herd
+  - Custom retry predicates
+- **CircuitBreaker** - Fault tolerance pattern implementation
+  - Three states: `closed`, `open`, `halfOpen`
+  - Automatic state transitions
+  - `CircuitBreakerManager` for managing multiple breakers
+  - `CircuitBreakerOpenException` with remaining time info
+- **PaymentLogger** - Secure logging with automatic sanitization
+  - Multiple log levels (debug, info, warning, error)
+  - Automatic sensitive data masking
+  - Payment-specific logging methods
+- **CardInfo.isExpired** - Check if card has expired
+- **CardInfo.toSafeJson()** - Safe JSON representation with masked CVV and card number
+- **BuyerInfo validation** - Turkish phone format, TC Kimlik validation, email regex
+- **PaymentRequest validation** - Amount, installment range, basket total verification, 3DS callback URL check
+- **RefundRequest validation** - Transaction ID and amount validation
+- **Secure random generation** - All providers now use `Random.secure()` for order IDs
+
+### Changed
+- All provider files (`IyzicoProvider`, `PayTRProvider`, `ParamProvider`, `SipayProvider`) now use secure random for ID generation
+- Config classes now include `connectionTimeout` (default: 30s) and `enableRetry` (default: true)
+- **LogSanitizer enhanced** - Now masks additional sensitive data patterns:
+  - `api_key`, `apiKey` values
+  - `secret_key`, `secretKey` values
+  - `token` values
+  - `password` values
+  - CVV/CVC in various formats (lowercase, uppercase, JSON strings)
+
+### Security
+- Replaced weak `Random()` with `Random.secure()` in all providers
+- CVV is now never exposed in logs or JSON output
+- Card numbers are automatically masked in logging
+- API keys, secrets, tokens, and passwords are automatically masked in logs
+
+### Documentation
+- Added `MIGRATION.md` for upgrading from v1.x to v2.0.0
+- Updated README with security best practices
+
 ## [1.0.4] - 2026-01-01
 
 ### Added
@@ -122,7 +212,9 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...v2.0.0
 [1.0.4]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.1...v1.0.2

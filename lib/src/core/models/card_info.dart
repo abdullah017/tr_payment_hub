@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import '../exceptions/validation_exception.dart';
+
 /// Card information for payment processing.
 ///
 /// Contains all card details required for processing payments.
@@ -133,10 +135,125 @@ class CardInfo {
     return sum % 10 == 0;
   }
 
-  /// Converts this instance to a JSON-compatible map.
+  /// Returns true if the card has expired.
   ///
-  /// WARNING: Contains sensitive data. Use only for API calls,
-  /// never for logging.
+  /// Checks expiry date against current date.
+  bool get isExpired {
+    final month = int.tryParse(expireMonth);
+    final year = int.tryParse(expireYear);
+
+    if (month == null || year == null) return true;
+
+    final now = DateTime.now();
+    final expiryDate = DateTime(year, month + 1, 0); // Last day of expiry month
+
+    return now.isAfter(expiryDate);
+  }
+
+  /// Validates the card information and throws [ValidationException] if invalid.
+  ///
+  /// Checks:
+  /// * Card holder name is not empty and has at least 3 characters
+  /// * Card number passes Luhn validation
+  /// * Expiry month is between 01 and 12
+  /// * Expiry year is valid and not expired
+  /// * CVC is 3 or 4 digits
+  ///
+  /// Throws [ValidationException] with all validation errors.
+  void validate() {
+    final errors = <String>[];
+
+    // Card holder name validation
+    if (cardHolderName.isEmpty) {
+      errors.add('cardHolderName cannot be empty');
+    } else if (cardHolderName.trim().length < 3) {
+      errors.add('cardHolderName must be at least 3 characters');
+    }
+
+    // Card number validation
+    final cleanNumber = cardNumber.replaceAll(RegExp(r'\s|-'), '');
+
+    if (cleanNumber.isEmpty) {
+      errors.add('cardNumber cannot be empty');
+    } else {
+      if (cleanNumber.length < 13 || cleanNumber.length > 19) {
+        errors.add('cardNumber must be 13-19 digits');
+      }
+
+      if (!RegExp(r'^\d+$').hasMatch(cleanNumber)) {
+        errors.add('cardNumber must contain only digits');
+      }
+
+      if (!isValidNumber) {
+        errors.add('cardNumber failed Luhn validation');
+      }
+    }
+
+    // Expiry month validation
+    final month = int.tryParse(expireMonth);
+    if (month == null || month < 1 || month > 12) {
+      errors.add('expireMonth must be between 01 and 12');
+    }
+
+    // Expiry year validation
+    final year = int.tryParse(expireYear);
+    final currentYear = DateTime.now().year;
+
+    if (year == null) {
+      errors.add('expireYear must be a valid year');
+    } else {
+      // Handle both 2-digit and 4-digit year formats
+      final fullYear = year < 100 ? 2000 + year : year;
+
+      if (fullYear < currentYear) {
+        errors.add('card has expired (year)');
+      } else if (fullYear > currentYear + 20) {
+        errors.add('expireYear is too far in the future');
+      }
+
+      // Check if card is expired (same year, past month)
+      if (month != null && fullYear == currentYear) {
+        final currentMonth = DateTime.now().month;
+        if (month < currentMonth) {
+          errors.add('card has expired');
+        }
+      }
+    }
+
+    // CVC validation
+    if (cvc.isEmpty) {
+      errors.add('cvc cannot be empty');
+    } else if (!RegExp(r'^\d{3,4}$').hasMatch(cvc)) {
+      errors.add('cvc must be 3 or 4 digits');
+    }
+
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors: errors);
+    }
+  }
+
+  /// Converts this instance to a JSON-compatible map for API calls.
+  ///
+  /// **WARNING: Contains sensitive data (full card number and CVV).**
+  ///
+  /// This method should ONLY be used internally for payment API requests.
+  /// **NEVER** use this for:
+  /// * Logging (use [toSafeJson] instead)
+  /// * Debugging output
+  /// * Error messages
+  /// * Analytics or telemetry
+  ///
+  /// For any logging or display purposes, always use [toSafeJson] which
+  /// properly masks sensitive card data.
+  ///
+  /// See also:
+  /// * [toSafeJson] - Safe alternative for logging
+  /// * [maskedNumber] - Masked card number for display
+  @internal
+  @Deprecated(
+    'Avoid direct use. For logging use toSafeJson(). '
+    'This method exposes raw card data and should only be used internally for API calls.',
+  )
   Map<String, dynamic> toJson() => {
         'cardHolderName': cardHolderName,
         'cardNumber': cardNumber,
@@ -144,6 +261,21 @@ class CardInfo {
         'expireYear': expireYear,
         'cvc': cvc,
         'saveCard': saveCard,
+      };
+
+  /// Safe JSON representation for logging.
+  ///
+  /// Masks sensitive data (card number and CVC) for secure logging.
+  /// Use this instead of [toJson] when logging card information.
+  Map<String, dynamic> toSafeJson() => {
+        'cardHolderName': cardHolderName,
+        'cardNumber': maskedNumber,
+        'expireMonth': expireMonth,
+        'expireYear': expireYear,
+        'cvc': '***',
+        'saveCard': saveCard,
+        'binNumber': binNumber,
+        'lastFourDigits': lastFourDigits,
       };
 
   /// Creates a copy of this instance with the given fields replaced.

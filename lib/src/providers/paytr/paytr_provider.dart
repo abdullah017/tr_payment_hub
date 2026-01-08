@@ -14,6 +14,7 @@ import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import '../../core/payment_provider.dart';
+import '../../core/utils/payment_utils.dart';
 import 'paytr_auth.dart';
 import 'paytr_endpoints.dart';
 import 'paytr_error_mapper.dart';
@@ -417,24 +418,19 @@ class PayTRProvider implements PaymentProvider {
     }
   }
 
-  String _generateMerchantOid() => 'SP${DateTime.now().millisecondsSinceEpoch}';
+  /// Generates a unique merchant order ID using PaymentUtils
+  String _generateMerchantOid() => PaymentUtils.generateOrderId(prefix: 'SP');
 
-  String _generateRequestId() => 'REQ${DateTime.now().millisecondsSinceEpoch}';
+  /// Generates a unique request ID using PaymentUtils
+  String _generateRequestId() =>
+      PaymentUtils.generateConversationId(prefix: 'REQ');
 
-  String _formatAmount(double amount) => (amount * 100).round().toString();
+  /// Formats amount to cents string using shared utility
+  String _formatAmount(double amount) => PaymentUtils.amountToCentsString(amount);
 
-  String _mapCurrency(Currency currency) {
-    switch (currency) {
-      case Currency.tryLira:
-        return 'TL';
-      case Currency.usd:
-        return 'USD';
-      case Currency.eur:
-        return 'EUR';
-      case Currency.gbp:
-        return 'GBP';
-    }
-  }
+  /// PayTR uses 'TL' instead of 'TRY' for Turkish Lira
+  String _mapCurrency(Currency currency) =>
+      PaymentUtils.currencyToProviderCode(currency, useTL: true);
 
   String _encodeBasket(List<BasketItem> items) {
     final basketArray = items
@@ -451,38 +447,9 @@ class PayTRProvider implements PaymentProvider {
     return base64.encode(utf8.encode(jsonString));
   }
 
-  List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) => [
-        InstallmentOption(
-          installmentNumber: 1,
-          installmentPrice: amount,
-          totalPrice: amount,
-        ),
-        InstallmentOption(
-          installmentNumber: 2,
-          installmentPrice: amount / 2 * 1.02,
-          totalPrice: amount * 1.02,
-        ),
-        InstallmentOption(
-          installmentNumber: 3,
-          installmentPrice: amount / 3 * 1.03,
-          totalPrice: amount * 1.03,
-        ),
-        InstallmentOption(
-          installmentNumber: 6,
-          installmentPrice: amount / 6 * 1.05,
-          totalPrice: amount * 1.05,
-        ),
-        InstallmentOption(
-          installmentNumber: 9,
-          installmentPrice: amount / 9 * 1.07,
-          totalPrice: amount * 1.07,
-        ),
-        InstallmentOption(
-          installmentNumber: 12,
-          installmentPrice: amount / 12 * 1.10,
-          totalPrice: amount * 1.10,
-        ),
-      ];
+  /// Uses shared PaymentUtils for default installment options
+  List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) =>
+      PaymentUtils.generateDefaultInstallmentOptions(amount);
 
   Future<Map<String, dynamic>> _postForm(
     String endpoint,
