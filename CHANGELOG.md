@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-01-08
+
+### Added
+- **Proxy Mode** - New architecture for Flutter + Custom Backend integration
+  - `ProxyPaymentProvider` - HTTP client that forwards requests to your backend
+  - `ProxyConfig` - Configuration class for proxy settings (baseUrl, authToken, headers, timeout, retries)
+  - `TrPaymentHub.createProxy()` - Factory method for creating proxy providers
+  - API credentials stay secure on your backend (Node.js, Python, Go, PHP, etc.)
+  - Built-in retry logic with exponential backoff
+  - Configurable timeout and max retries
+
+- **Client-Side Validation** - Validate payment data before sending to backend
+  - `CardValidator` - Independent card validation utilities
+    - `isValidCardNumber()` - Luhn algorithm validation
+    - `isValidExpiry()` - Expiry date validation
+    - `isValidCVV()` - CVV format validation (3 or 4 digits for Amex)
+    - `isValidHolderName()` - Cardholder name validation
+    - `detectCardBrand()` - Detect Visa, Mastercard, Amex, Troy
+    - `formatCardNumber()` - Add spaces for display
+    - `maskCardNumber()` - Show BIN + last 4 digits
+    - `extractBin()` - Extract BIN from card number
+    - `validate()` - Full validation returning `CardValidationResult`
+  - `RequestValidator` - Payment request validation
+    - `validate()` - Full request validation returning `RequestValidationResult`
+    - `validateBuyer()` - Buyer info validation (email, phone, IP)
+  - `CardBrand` enum - visa, mastercard, amex, troy, unknown
+  - `CardValidationResult` - Validation result with errors and card brand
+  - `RequestValidationResult` - Validation result with field-specific errors
+
+- **Client-Only Export** - `tr_payment_hub_client.dart`
+  - Exports only client-safe components (no provider credentials)
+  - Includes: models, enums, validators, proxy provider, testing utilities
+  - Ideal for Flutter apps that use Proxy Mode
+
+- **JSON Serialization** - Added toJson/fromJson to remaining models
+  - `PaymentRequest.toJson()` / `PaymentRequest.fromJson()`
+  - `PaymentResult.toJson()` / `PaymentResult.fromJson()`
+  - `RefundResult.toJson()` / `RefundResult.fromJson()`
+  - `ThreeDSInitResult.toJson()` / `ThreeDSInitResult.fromJson()`
+  - `PaymentException.toJson()` / `PaymentException.fromJson()`
+
+- **Backend Examples** - Reference implementations
+  - Node.js Express example (`backend-examples/nodejs-express/`)
+  - Python FastAPI example (`backend-examples/python-fastapi/`)
+
+### Changed
+- Version bumped to 3.0.0 (major version for new feature set)
+- README updated with Usage Modes section (Proxy vs Direct)
+- Main export file now includes client module exports
+
+### Documentation
+- Added comprehensive Proxy Mode documentation in README
+- Added Client-Side Validation examples
+- Created MIGRATION.md for v2.x → v3.0 upgrade guide
+- Backend API contract documentation
+
+### No Breaking Changes
+- All existing v2.x code continues to work unchanged
+- Proxy Mode is additive - Direct Mode remains fully supported
+- Existing tests pass without modification
+
 ## [2.0.1] - 2026-01-08
 
 ### Added
@@ -212,7 +273,8 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...v3.0.0
 [2.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...v2.0.0
 [1.0.4]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.3...v1.0.4

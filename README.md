@@ -21,11 +21,86 @@ Unified Turkish payment gateway integration for Flutter/Dart applications.
 ## Features
 
 - **Unified API** - Single interface for all payment providers
+- **Proxy Mode** - Secure Flutter + Custom Backend architecture (v3.0+)
 - **Type Safe** - Full Dart null safety support
 - **Secure** - Automatic sensitive data masking with LogSanitizer
 - **Testable** - Built-in MockPaymentProvider for unit testing
 - **Cross Platform** - Works on iOS, Android, Web, and Desktop
 - **Saved Cards** - Card tokenization support (iyzico, Sipay)
+- **Client Validation** - CardValidator and RequestValidator for client-side validation
+
+## Usage Modes
+
+TR Payment Hub supports two usage modes:
+
+### Proxy Mode (Recommended for Flutter Apps)
+
+Use this mode when your backend is written in **any language** (Node.js, Python, Go, PHP, etc.).
+API credentials stay secure on your backend - never exposed in the Flutter app.
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+// Create proxy provider (no credentials needed!)
+final provider = TrPaymentHub.createProxy(
+  baseUrl: 'https://api.yourbackend.com/payment',
+  provider: ProviderType.iyzico,
+  authToken: 'user_jwt_token', // Optional
+);
+
+await provider.initializeWithProvider(ProviderType.iyzico);
+
+// Payment request goes to YOUR backend
+final result = await provider.createPayment(request);
+```
+
+**Benefits:**
+- API keys stay on your secure backend
+- Backend can be any language
+- Unified Flutter code regardless of provider
+- Client-side validation before sending
+
+### Direct Mode (Dart Backend Only)
+
+Use this mode only when your backend is written in **Dart** (serverpod, dart_frog, shelf).
+Credentials are passed during initialization.
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+final provider = TrPaymentHub.create(ProviderType.iyzico);
+await provider.initialize(IyzicoConfig(
+  apiKey: 'xxx',
+  secretKey: 'xxx',
+  merchantId: 'xxx',
+));
+```
+
+## Client-Side Validation
+
+Validate card information before sending to backend:
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+final validation = CardValidator.validate(
+  cardNumber: '5528790000000008',
+  expireMonth: '12',
+  expireYear: '2030',
+  cvv: '123',
+  holderName: 'Ahmet Yilmaz',
+);
+
+if (!validation.isValid) {
+  print(validation.errors); // {'cardNumber': 'Invalid card number'}
+  return;
+}
+
+print('Card brand: ${validation.cardBrand.displayName}'); // Mastercard
+
+// Now safe to send to backend
+await provider.createPayment(request);
+```
 
 ## Installation
 

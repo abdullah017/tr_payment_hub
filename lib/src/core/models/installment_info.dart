@@ -124,7 +124,7 @@ class InstallmentInfo {
   factory InstallmentInfo.fromJson(Map<String, dynamic> json) =>
       InstallmentInfo(
         binNumber: json['binNumber'] as String?,
-        price: (json['price'] as num).toDouble(),
+        price: (json['price'] as num?)?.toDouble() ?? 0.0,
         cardType: CardType.values.firstWhere(
           (e) => e.name == json['cardType'],
           orElse: () => CardType.creditCard,
@@ -133,14 +133,16 @@ class InstallmentInfo {
           (e) => e.name == json['cardAssociation'],
           orElse: () => CardAssociation.visa,
         ),
-        cardFamily: json['cardFamily'] as String,
-        bankName: json['bankName'] as String,
-        bankCode: json['bankCode'] as int,
-        force3DS: json['force3DS'] as bool,
-        forceCVC: json['forceCVC'] as bool,
-        options: (json['options'] as List)
-            .map((e) => InstallmentOption.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        cardFamily: json['cardFamily'] as String? ?? '',
+        bankName: json['bankName'] as String? ?? '',
+        bankCode: json['bankCode'] as int? ?? 0,
+        force3DS: json['force3DS'] as bool? ?? false,
+        forceCVC: json['forceCVC'] as bool? ?? false,
+        options: (json['options'] as List?)
+                ?.map(
+                    (e) => InstallmentOption.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
       );
 
   /// Card BIN number used for the query.
