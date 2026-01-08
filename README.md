@@ -3,7 +3,6 @@
 [![Pub Version](https://img.shields.io/pub/v/tr_payment_hub)](https://pub.dev/packages/tr_payment_hub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)](https://dart.dev)
-[![CI](https://github.com/abdullah017/tr_payment_hub/actions/workflows/ci.yml/badge.svg)](https://github.com/abdullah017/tr_payment_hub/actions)
 
 **[Türkçe Dokümantasyon](README_TR.md)**
 
