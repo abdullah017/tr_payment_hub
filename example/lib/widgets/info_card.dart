@@ -54,7 +54,7 @@ class InfoCard extends StatelessWidget {
     final cardColor = color ?? Theme.of(context).colorScheme.primary;
 
     return Card(
-      color: cardColor.withValues(alpha: 0.1),
+      color: cardColor.withOpacity(0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -173,7 +173,7 @@ class FeatureCard extends StatelessWidget {
                         description,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.7),
+                              .withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -182,7 +182,7 @@ class FeatureCard extends StatelessWidget {
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ],
             ),

@@ -157,7 +157,7 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen> {
     }
 
     return Card(
-      color: statusColor.withValues(alpha: 0.1),
+      color: statusColor.withOpacity(0.1),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(

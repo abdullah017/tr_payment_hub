@@ -31,7 +31,7 @@ class PaymentResultScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: (isSuccess ? Colors.green : Colors.red)
-                    .withValues(alpha: 0.1),
+                    .withOpacity(0.1),
               ),
               child: Icon(
                 isSuccess ? Icons.check_circle : Icons.error,
