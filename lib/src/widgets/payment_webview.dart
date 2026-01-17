@@ -495,7 +495,8 @@ class _PaymentWebViewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !showConfirmOnCancel,
-      onPopInvokedWithResult: (didPop, result) async {
+      // ignore: deprecated_member_use
+      onPopInvoked: (didPop) async {
         if (didPop) return;
 
         final shouldPop = await _showCancelConfirmation(context);
