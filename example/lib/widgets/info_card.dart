@@ -172,8 +172,7 @@ class FeatureCard extends StatelessWidget {
                       Text(
                         description,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withOpacity(0.7),
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
