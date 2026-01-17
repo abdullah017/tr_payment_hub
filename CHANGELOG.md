@@ -7,6 +7,112 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-01-17
+
+### Added
+
+#### Example App - Complete Rewrite
+- **Multi-Screen Architecture** - Feature-based folder structure
+  - `HomeScreen` - Dashboard with provider status and quick actions
+  - `PaymentScreen` - Full payment form with 3DS support
+  - `InstallmentsScreen` - BIN-based installment query
+  - `SavedCardsScreen` - List, charge, and delete saved cards
+  - `RefundScreen` - Full and partial refund processing
+  - `TransactionStatusScreen` - Payment status lookup
+  - `LogsScreen` - Real-time HTTP request/response viewer
+  - `SettingsScreen` - Provider selection and app configuration
+- **State Management** - Provider pattern with `AppState`
+- **Two Connection Modes**
+  - **Direct Mode** - API keys stored in app (development)
+  - **Proxy Mode** - API keys on backend server (production)
+- **Material Design 3** - Modern theming with light/dark mode support
+- **Persistent Storage** - SharedPreferences for settings and history
+
+#### Backend Example (Node.js)
+- **Express.js Server** - Complete proxy backend implementation
+  - All payment endpoints (create, 3DS, refund, status)
+  - Saved cards endpoints (list, charge, delete)
+  - Installment queries
+- **Multi-Provider Support** - iyzico, PayTR, Sipay, Param
+- **Environment Configuration** - `.env.example` template
+- **Security** - API keys never exposed to Flutter app
+
+#### Request Logging
+- **RequestLogger** - HTTP request/response logging infrastructure
+  - `RequestLogEntry` - Log entry model with timing info
+  - `RequestLoggerConfig` - Configurable log levels
+  - Automatic sensitive data masking via LogSanitizer
+  - Callback support for custom log handling
+
+#### Metrics Collection
+- **PaymentMetrics** - Operation metrics tracking
+  - `PaymentMetricEvent` - Metric event model
+  - `MetricsCollector` - Abstract interface
+  - `InMemoryMetricsCollector` - Default implementation
+  - Provider-level and operation-level metrics
+  - Success/failure counters and timing stats
+
+#### Provider Improvements
+- **Provider Mixins** - Reusable functionality
+  - `InitializedProviderMixin` - Initialization state management
+  - `LoggingProviderMixin` - Integrated logging support
+  - `MetricsProviderMixin` - Metrics collection support
+- **ResilientNetworkClient** - Fault-tolerant HTTP client
+  - Built-in RetryHandler integration
+  - CircuitBreaker integration
+  - Automatic fallback and recovery
+
+#### Security Enhancements
+- **SecurityUtils** - Security utility functions
+  - `constantTimeEquals()` - Timing-safe string comparison
+  - `secureHash()` - Secure hash generation
+  - `maskSensitiveData()` - Data masking utilities
+- **JsonUtils** - Safe JSON parsing
+  - `safeParse()` - Null-safe JSON parsing
+  - `safeGetString()`, `safeGetInt()`, etc.
+
+#### Testing
+- **Widget Tests** - PaymentWebView widget tests
+  - `payment_webview_test.dart` - Core widget tests
+  - `payment_webview_theme_test.dart` - Theme tests
+  - `payment_webview_result_test.dart` - Result model tests
+- **Unit Tests** - New test files
+  - `request_logger_test.dart` - Logger tests
+  - `payment_metrics_test.dart` - Metrics tests
+  - `resilient_network_client_test.dart` - Network client tests
+
+#### CI/CD
+- **GitHub Actions Workflows**
+  - `ci.yml` - Continuous integration (lint, analyze, test)
+  - `test.yml` - Extended test matrix (SDK versions)
+
+### Changed
+- **All Providers** - Updated to support optional `metricsCollector` parameter
+- **HttpNetworkClient** - Now supports optional `requestLogger` parameter
+- **Example pubspec.yaml** - Added provider and shared_preferences dependencies
+- **LogSanitizer** - Enhanced patterns for better data masking
+
+### Documentation
+- **example/README.md** - Comprehensive usage guide
+  - Direct Mode vs Proxy Mode explanation
+  - Backend setup instructions
+  - Test cards and troubleshooting
+- **example/backend/README.md** - Backend API documentation
+
+### Example App Features Summary
+| Feature | Description |
+|---------|-------------|
+| Provider Selection | Mock, iyzico, PayTR, Sipay, Param |
+| Connection Mode | Direct API or Proxy (Backend) |
+| Payment Form | Card validation, 3DS toggle |
+| 3D Secure | Built-in PaymentWebView |
+| Installments | BIN-based query with selection |
+| Saved Cards | List, charge, delete (iyzico/Sipay) |
+| Refunds | Full or partial amount |
+| Status Check | Transaction status lookup |
+| Request Logs | HTTP request/response viewer |
+| Settings | Theme, sandbox mode, logging |
+
 ## [3.1.0] - 2026-01-09
 
 ### Added
@@ -348,7 +454,8 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/abdullah017/tr_payment_hub/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/abdullah017/tr_payment_hub/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...v3.0.0
 [2.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...v2.0.1

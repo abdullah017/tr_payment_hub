@@ -447,7 +447,7 @@ $htmlContent
                 _errorMessage!,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ],
@@ -495,7 +495,8 @@ class _PaymentWebViewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !showConfirmOnCancel,
-      onPopInvokedWithResult: (didPop, result) async {
+      // ignore: deprecated_member_use
+      onPopInvoked: (didPop) async {
         if (didPop) return;
 
         final shouldPop = await _showCancelConfirmation(context);

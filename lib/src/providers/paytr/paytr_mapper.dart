@@ -6,8 +6,56 @@ import '../../core/models/payment_request.dart';
 import '../../core/models/payment_result.dart';
 import '../../core/models/three_ds_result.dart';
 
-/// PayTR request/response dönüştürücü
+/// Converts between TR Payment Hub models and PayTR API formats.
+///
+/// PayTR uses form-encoded requests and JSON responses. This mapper
+/// handles the conversion between the unified TR Payment Hub models
+/// and PayTR's specific data formats.
+///
+/// ## Request Mapping
+///
+/// * [toDirectPaymentRequest] - Direct API payment (card details)
+/// * [toIframeTokenRequest] - iFrame payment initialization
+/// * [toRefundRequest] - Refund processing
+/// * [toStatusRequest] - Payment status query
+///
+/// ## Response Mapping
+///
+/// * [fromIframeTokenResponse] - iFrame URL result
+/// * [fromPaymentResponse] - Payment result from callback
+/// * [fromRefundResponse] - Refund result
+/// * [fromInstallmentResponse] - Installment options
+///
+/// ## PayTR Specifics
+///
+/// * Amounts are in kuruş (multiply TL by 100)
+/// * Basket items are Base64-encoded JSON
+/// * Currency codes: TL, USD, EUR, GBP
+///
+/// ## Example
+///
+/// ```dart
+/// // Convert to PayTR format
+/// final paytrRequest = PayTRMapper.toIframeTokenRequest(
+///   request: paymentRequest,
+///   merchantId: 'xxx',
+///   paytrToken: 'generated_token',
+///   merchantOid: 'ORDER_123',
+///   successUrl: 'https://...',
+///   failUrl: 'https://...',
+///   callbackUrl: 'https://...',
+///   testMode: true,
+/// );
+///
+/// // Parse PayTR response
+/// final result = PayTRMapper.fromPaymentResponse(callbackData);
+/// ```
+///
+/// ## PayTR API Reference
+///
+/// See [PayTR documentation](https://dev.paytr.com/) for API details.
 class PayTRMapper {
+  /// Private constructor - this class only has static methods.
   PayTRMapper._();
 
   /// PaymentRequest'i PayTR Direct API formatına çevir

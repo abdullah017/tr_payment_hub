@@ -80,7 +80,8 @@ class RequestValidator {
           errors['basketItems[$i].name'] = 'Urun adi bos olamaz';
         }
         if (item.price <= 0) {
-          errors['basketItems[$i].price'] = 'Urun fiyati 0\'dan buyuk olmalidir';
+          errors['basketItems[$i].price'] =
+              'Urun fiyati 0\'dan buyuk olmalidir';
         }
       }
     }

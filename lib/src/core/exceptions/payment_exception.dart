@@ -44,8 +44,11 @@ class PaymentException implements Exception {
         : null;
 
     return PaymentException(
-      code: json['errorCode'] as String? ?? json['code'] as String? ?? 'unknown',
-      message: json['errorMessage'] as String? ?? json['message'] as String? ?? 'Unknown error',
+      code:
+          json['errorCode'] as String? ?? json['code'] as String? ?? 'unknown',
+      message: json['errorMessage'] as String? ??
+          json['message'] as String? ??
+          'Unknown error',
       providerCode: json['providerCode'] as String?,
       providerMessage: json['providerMessage'] as String?,
       provider: provider,

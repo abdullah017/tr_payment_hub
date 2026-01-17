@@ -51,12 +51,12 @@ class PaymentResult {
 
   /// Creates a [PaymentResult] from a JSON map.
   factory PaymentResult.fromJson(Map<String, dynamic> json) => PaymentResult(
-        isSuccess: json['success'] as bool? ?? json['isSuccess'] as bool? ?? false,
+        isSuccess:
+            json['success'] as bool? ?? json['isSuccess'] as bool? ?? false,
         transactionId: json['transactionId'] as String?,
         paymentId: json['paymentId'] as String?,
-        amount: json['amount'] != null
-            ? (json['amount'] as num).toDouble()
-            : null,
+        amount:
+            json['amount'] != null ? (json['amount'] as num).toDouble() : null,
         paidAmount: json['paidAmount'] != null
             ? (json['paidAmount'] as num).toDouble()
             : null,
@@ -238,7 +238,8 @@ class RefundResult {
 
   /// Creates a [RefundResult] from a JSON map.
   factory RefundResult.fromJson(Map<String, dynamic> json) => RefundResult(
-        isSuccess: json['success'] as bool? ?? json['isSuccess'] as bool? ?? false,
+        isSuccess:
+            json['success'] as bool? ?? json['isSuccess'] as bool? ?? false,
         refundId: json['refundId'] as String?,
         refundedAmount: json['refundedAmount'] != null
             ? (json['refundedAmount'] as num).toDouble()

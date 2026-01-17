@@ -7,37 +7,98 @@ import 'models/payment_result.dart';
 import 'models/refund_request.dart';
 import 'models/saved_card.dart';
 import 'models/three_ds_result.dart';
+import 'payment_interfaces.dart';
 
-/// Ana payment provider interface
-abstract class PaymentProvider {
+// Re-export interfaces for convenience
+export 'payment_interfaces.dart';
+
+/// Ana payment provider interface.
+///
+/// Bu interface, tüm ödeme sağlayıcılarının uygulaması gereken
+/// temel işlemleri tanımlar. Interface segregation prensibi uygulanmıştır:
+///
+/// - [PaymentCore] - Temel ödeme işlemleri (create, 3DS, refund, status)
+/// - [PaymentInstallments] - Taksit sorgulama
+/// - [PaymentSavedCards] - Kayıtlı kart işlemleri
+///
+/// ## Provider Desteği
+///
+/// | Provider | Core | Installments | Saved Cards |
+/// |----------|------|--------------|-------------|
+/// | iyzico   | ✅   | ✅           | ✅          |
+/// | PayTR    | ✅   | ✅           | ❌          |
+/// | Sipay    | ✅   | ✅           | ✅          |
+/// | Param    | ✅   | ✅           | ❌          |
+///
+/// ## Capability Check
+///
+/// ```dart
+/// final provider = IyzicoProvider();
+///
+/// // Check saved cards support
+/// if (provider.supportsSavedCards) {
+///   final cards = await provider.getSavedCards(cardUserKey);
+/// }
+///
+/// // Alternative: type check
+/// if (provider is PaymentSavedCards) {
+///   final cards = await provider.getSavedCards(cardUserKey);
+/// }
+/// ```
+///
+/// ## Example
+///
+/// ```dart
+/// final provider = IyzicoProvider();
+/// await provider.initialize(config);
+///
+/// // Create payment
+/// final result = await provider.createPayment(request);
+///
+/// // Get installments
+/// final installments = await provider.getInstallments(
+///   binNumber: '552879',
+///   amount: 100.0,
+/// );
+/// ```
+abstract class PaymentProvider
+    implements PaymentCore, PaymentInstallments, PaymentSavedCards {
   /// Provider türü
+  @override
   ProviderType get providerType;
 
   /// Provider'ı başlat ve config'i doğrula
+  @override
   Future<void> initialize(PaymentConfig config);
 
   /// Non-3DS ödeme başlat
+  @override
   Future<PaymentResult> createPayment(PaymentRequest request);
 
   /// 3DS ödeme başlat
+  @override
   Future<ThreeDSInitResult> init3DSPayment(PaymentRequest request);
 
   /// 3DS ödemeyi tamamla (callback sonrası)
+  @override
   Future<PaymentResult> complete3DSPayment(
     String transactionId, {
     Map<String, dynamic>? callbackData,
   });
 
   /// İade işlemi
+  @override
   Future<RefundResult> refund(RefundRequest request);
 
   /// Taksit seçeneklerini getir
+  @override
   Future<InstallmentInfo> getInstallments({
     required String binNumber,
     required double amount,
   });
 
   /// İşlem durumu sorgula
+  @override
   Future<PaymentStatus> getPaymentStatus(String transactionId);
 
   // ============================================
@@ -63,6 +124,7 @@ abstract class PaymentProvider {
   /// ```
   ///
   /// Throws [UnsupportedError] if the provider doesn't support card saving.
+  @override
   Future<PaymentResult> chargeWithSavedCard({
     required String cardToken,
     required String orderId,
@@ -88,6 +150,7 @@ abstract class PaymentProvider {
   /// ```
   ///
   /// Throws [UnsupportedError] if the provider doesn't support card saving.
+  @override
   Future<List<SavedCard>> getSavedCards(String cardUserKey);
 
   /// Deletes a saved card.
@@ -105,11 +168,13 @@ abstract class PaymentProvider {
   /// ```
   ///
   /// Throws [UnsupportedError] if the provider doesn't support card saving.
+  @override
   Future<bool> deleteSavedCard({
     required String cardToken,
     String? cardUserKey,
   });
 
   /// Kaynakları temizle
+  @override
   void dispose();
 }

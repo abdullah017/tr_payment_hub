@@ -25,42 +25,56 @@ void main() {
       });
 
       test('should reject cards with invalid length', () {
-        expect(CardValidator.isValidCardNumber('411111111111'), false); // 12 digits
-        expect(CardValidator.isValidCardNumber('41111111111111111111'), false); // 20 digits
+        expect(CardValidator.isValidCardNumber('411111111111'),
+            false); // 12 digits
+        expect(CardValidator.isValidCardNumber('41111111111111111111'),
+            false); // 20 digits
       });
     });
 
     group('detectCardBrand', () {
       test('should detect Visa', () {
-        expect(CardValidator.detectCardBrand('4111111111111111'), CardBrand.visa);
-        expect(CardValidator.detectCardBrand('4532015112830366'), CardBrand.visa);
+        expect(
+            CardValidator.detectCardBrand('4111111111111111'), CardBrand.visa);
+        expect(
+            CardValidator.detectCardBrand('4532015112830366'), CardBrand.visa);
         expect(CardValidator.detectCardBrand('4'), CardBrand.visa);
       });
 
       test('should detect Mastercard (51-55 range)', () {
-        expect(CardValidator.detectCardBrand('5528790000000008'), CardBrand.mastercard);
-        expect(CardValidator.detectCardBrand('5100000000000000'), CardBrand.mastercard);
-        expect(CardValidator.detectCardBrand('5500000000000000'), CardBrand.mastercard);
+        expect(CardValidator.detectCardBrand('5528790000000008'),
+            CardBrand.mastercard);
+        expect(CardValidator.detectCardBrand('5100000000000000'),
+            CardBrand.mastercard);
+        expect(CardValidator.detectCardBrand('5500000000000000'),
+            CardBrand.mastercard);
       });
 
       test('should detect Mastercard (2221-2720 range)', () {
-        expect(CardValidator.detectCardBrand('2221000000000000'), CardBrand.mastercard);
-        expect(CardValidator.detectCardBrand('2720000000000000'), CardBrand.mastercard);
+        expect(CardValidator.detectCardBrand('2221000000000000'),
+            CardBrand.mastercard);
+        expect(CardValidator.detectCardBrand('2720000000000000'),
+            CardBrand.mastercard);
       });
 
       test('should detect Amex', () {
-        expect(CardValidator.detectCardBrand('340000000000009'), CardBrand.amex);
-        expect(CardValidator.detectCardBrand('374245455400126'), CardBrand.amex);
-        expect(CardValidator.detectCardBrand('370000000000002'), CardBrand.amex);
+        expect(
+            CardValidator.detectCardBrand('340000000000009'), CardBrand.amex);
+        expect(
+            CardValidator.detectCardBrand('374245455400126'), CardBrand.amex);
+        expect(
+            CardValidator.detectCardBrand('370000000000002'), CardBrand.amex);
       });
 
       test('should detect Troy', () {
-        expect(CardValidator.detectCardBrand('9792000000000001'), CardBrand.troy);
+        expect(
+            CardValidator.detectCardBrand('9792000000000001'), CardBrand.troy);
         expect(CardValidator.detectCardBrand('9792'), CardBrand.troy);
       });
 
       test('should return unknown for unrecognized cards', () {
-        expect(CardValidator.detectCardBrand('6011000000000000'), CardBrand.unknown);
+        expect(CardValidator.detectCardBrand('6011000000000000'),
+            CardBrand.unknown);
         expect(CardValidator.detectCardBrand(''), CardBrand.unknown);
       });
     });
@@ -104,13 +118,16 @@ void main() {
       });
 
       test('should validate 4-digit CVV for Amex', () {
-        expect(CardValidator.isValidCVV('1234', cardBrand: CardBrand.amex), true);
-        expect(CardValidator.isValidCVV('123', cardBrand: CardBrand.amex), false);
+        expect(
+            CardValidator.isValidCVV('1234', cardBrand: CardBrand.amex), true);
+        expect(
+            CardValidator.isValidCVV('123', cardBrand: CardBrand.amex), false);
       });
 
       test('should reject 4-digit CVV for non-Amex', () {
         expect(CardValidator.isValidCVV('1234'), false);
-        expect(CardValidator.isValidCVV('1234', cardBrand: CardBrand.visa), false);
+        expect(
+            CardValidator.isValidCVV('1234', cardBrand: CardBrand.visa), false);
       });
 
       test('should reject invalid CVV', () {
@@ -251,7 +268,8 @@ void main() {
       });
 
       test('should extract custom length', () {
-        expect(CardValidator.extractBin('5528790000000008', length: 8), '55287900');
+        expect(CardValidator.extractBin('5528790000000008', length: 8),
+            '55287900');
       });
 
       test('should handle short numbers', () {

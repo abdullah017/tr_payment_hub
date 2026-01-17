@@ -189,9 +189,12 @@ void main() async {
   print('BIN: ${CardValidator.extractBin("5528790000000008")}');
 
   // Kart markası tespiti
-  print('Visa: ${CardValidator.detectCardBrand("4111111111111111").displayName}');
-  print('Amex: ${CardValidator.detectCardBrand("374245455400126").displayName}');
-  print('Troy: ${CardValidator.detectCardBrand("9792000000000001").displayName}');
+  print(
+      'Visa: ${CardValidator.detectCardBrand("4111111111111111").displayName}');
+  print(
+      'Amex: ${CardValidator.detectCardBrand("374245455400126").displayName}');
+  print(
+      'Troy: ${CardValidator.detectCardBrand("9792000000000001").displayName}');
   print('');
 
   // ----------------------------------------
