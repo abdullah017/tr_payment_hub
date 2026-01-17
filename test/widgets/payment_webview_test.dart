@@ -12,7 +12,6 @@ import 'package:tr_payment_hub/src/widgets/payment_webview_theme.dart';
 // - PaymentWebViewResult
 
 void main() {
-
   group('PaymentWebViewTheme', () {
     test('creates default theme', () {
       const theme = PaymentWebViewTheme.defaultTheme;

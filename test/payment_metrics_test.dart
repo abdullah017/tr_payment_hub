@@ -55,7 +55,8 @@ void main() {
 
     test('should have 3DS metrics', () {
       expect(MetricNames.threeDSInitAttempt, equals('3ds.init.attempt'));
-      expect(MetricNames.threeDSCompleteSuccess, equals('3ds.complete.success'));
+      expect(
+          MetricNames.threeDSCompleteSuccess, equals('3ds.complete.success'));
     });
 
     test('should have resilience metrics', () {
@@ -160,8 +161,7 @@ void main() {
       collector.increment('test', provider: ProviderType.paytr);
       collector.increment('test', provider: ProviderType.iyzico);
 
-      final iyzicoEvents =
-          collector.getEvents(provider: ProviderType.iyzico);
+      final iyzicoEvents = collector.getEvents(provider: ProviderType.iyzico);
       expect(iyzicoEvents.length, equals(2));
     });
 

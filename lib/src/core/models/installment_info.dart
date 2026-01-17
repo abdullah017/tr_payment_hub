@@ -139,8 +139,8 @@ class InstallmentInfo {
         force3DS: json['force3DS'] as bool? ?? false,
         forceCVC: json['forceCVC'] as bool? ?? false,
         options: (json['options'] as List?)
-                ?.map(
-                    (e) => InstallmentOption.fromJson(e as Map<String, dynamic>))
+                ?.map((e) =>
+                    InstallmentOption.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
       );

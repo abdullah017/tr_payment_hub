@@ -209,7 +209,8 @@ class _RefundScreenState extends State<RefundScreen> {
                   isSuccess ? 'Refund Successful' : 'Refund Failed',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+                    color:
+                        isSuccess ? Colors.green.shade700 : Colors.red.shade700,
                   ),
                 ),
               ],
@@ -217,7 +218,8 @@ class _RefundScreenState extends State<RefundScreen> {
             const SizedBox(height: 16),
             _resultRow('Refund ID', result.refundId ?? '-'),
             if (result.refundedAmount != null)
-              _resultRow('Refunded Amount', '${result.refundedAmount!.toStringAsFixed(2)} TL'),
+              _resultRow('Refunded Amount',
+                  '${result.refundedAmount!.toStringAsFixed(2)} TL'),
             if (result.errorMessage != null)
               _resultRow('Error', result.errorMessage!, isError: true),
             if (result.errorCode != null)

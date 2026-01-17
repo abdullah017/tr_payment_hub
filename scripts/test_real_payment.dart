@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 /// Real Payment Integration Test Script
 ///
 /// Bu script gerçek sandbox API'lerini test eder.
@@ -77,7 +78,8 @@ void main() async {
     print('  Kart Tipi: ${installments.cardType}');
     print('  Taksit Seçenekleri:');
     for (final opt in installments.options.take(3)) {
-      print('    ${opt.installmentNumber}x: ${opt.totalPrice.toStringAsFixed(2)} TL');
+      print(
+          '    ${opt.installmentNumber}x: ${opt.totalPrice.toStringAsFixed(2)} TL');
     }
     print('');
   } catch (e) {
@@ -194,7 +196,8 @@ void main() async {
     if (threeDSResult.status == ThreeDSStatus.pending) {
       print('✓ 3DS başlatıldı!');
       print('  Transaction ID: ${threeDSResult.transactionId}');
-      print('  HTML Content: ${threeDSResult.htmlContent?.substring(0, 100)}...');
+      print(
+          '  HTML Content: ${threeDSResult.htmlContent?.substring(0, 100)}...');
       print('  (WebView\'de gösterilmesi gereken HTML)');
     } else {
       print('❌ 3DS başlatılamadı: ${threeDSResult.errorMessage}');

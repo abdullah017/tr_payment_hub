@@ -55,7 +55,8 @@ class SecurityUtils {
     final bBytes = b.codeUnits;
 
     // Use the longer length to ensure constant time
-    final length = aBytes.length > bBytes.length ? aBytes.length : bBytes.length;
+    final length =
+        aBytes.length > bBytes.length ? aBytes.length : bBytes.length;
 
     var result = aBytes.length ^ bBytes.length;
 

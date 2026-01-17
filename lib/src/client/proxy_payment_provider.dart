@@ -444,7 +444,8 @@ class ProxyPaymentProvider implements PaymentProvider {
     // HTTP error
     throw PaymentException(
       code: body['errorCode']?.toString() ?? 'http_${response.statusCode}',
-      message: body['errorMessage']?.toString() ?? 'HTTP ${response.statusCode}',
+      message:
+          body['errorMessage']?.toString() ?? 'HTTP ${response.statusCode}',
       providerCode: body['providerCode']?.toString(),
       providerMessage: body['providerMessage']?.toString(),
       provider: _providerType,

@@ -90,15 +90,16 @@ class RequestLogEntry {
   final String? error;
 
   /// Whether this is a successful request (2xx status code).
-  bool get isSuccess => statusCode != null && statusCode! >= 200 && statusCode! < 300;
+  bool get isSuccess =>
+      statusCode != null && statusCode! >= 200 && statusCode! < 300;
 
   /// Whether this request resulted in an error.
-  bool get isError => error != null || (statusCode != null && statusCode! >= 400);
+  bool get isError =>
+      error != null || (statusCode != null && statusCode! >= 400);
 
   @override
   String toString() {
-    final buffer = StringBuffer()
-      ..write('[$method] $url');
+    final buffer = StringBuffer()..write('[$method] $url');
 
     if (statusCode != null) {
       buffer.write(' -> $statusCode');
@@ -183,13 +184,11 @@ class RequestLogger {
   }) {
     if (!config.logRequests) return;
 
-    final sanitizedHeaders = config.logHeaders && headers != null
-        ? _sanitizeHeaders(headers)
-        : null;
+    final sanitizedHeaders =
+        config.logHeaders && headers != null ? _sanitizeHeaders(headers) : null;
 
-    final sanitizedBody = config.logBody && body != null
-        ? _sanitizeAndTruncate(body)
-        : null;
+    final sanitizedBody =
+        config.logBody && body != null ? _sanitizeAndTruncate(body) : null;
 
     final entry = RequestLogEntry(
       method: method,
@@ -212,9 +211,8 @@ class RequestLogger {
   }) {
     if (!config.logResponses) return;
 
-    final sanitizedBody = config.logBody && body != null
-        ? _sanitizeAndTruncate(body)
-        : null;
+    final sanitizedBody =
+        config.logBody && body != null ? _sanitizeAndTruncate(body) : null;
 
     final entry = RequestLogEntry(
       method: method,

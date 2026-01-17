@@ -30,7 +30,8 @@ class PaymentResultScreen extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: (isSuccess ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                color: (isSuccess ? Colors.green : Colors.red)
+                    .withValues(alpha: 0.1),
               ),
               child: Icon(
                 isSuccess ? Icons.check_circle : Icons.error,
@@ -194,7 +195,8 @@ class PaymentResultScreen extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+                    onPressed: () =>
+                        Navigator.popUntil(context, (r) => r.isFirst),
                     child: const Text('Done'),
                   ),
                 ),

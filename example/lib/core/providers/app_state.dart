@@ -133,7 +133,8 @@ class AppState extends ChangeNotifier {
   }
 
   // Transaction history
-  List<Map<String, dynamic>> get transactionHistory => storage.transactionHistory;
+  List<Map<String, dynamic>> get transactionHistory =>
+      storage.transactionHistory;
 
   void addTransaction(Map<String, dynamic> transaction) {
     storage.addTransaction(transaction);

@@ -17,7 +17,8 @@ class StorageService {
   static const _keySelectedProvider = 'selected_provider';
   static const _keyProviderConfigs = 'provider_configs';
 
-  String get selectedProvider => _prefs?.getString(_keySelectedProvider) ?? 'mock';
+  String get selectedProvider =>
+      _prefs?.getString(_keySelectedProvider) ?? 'mock';
 
   set selectedProvider(String value) {
     _prefs?.setString(_keySelectedProvider, value);
@@ -71,7 +72,9 @@ class StorageService {
   bool get useProxyMode => _prefs?.getBool(_keyUseProxyMode) ?? false;
   set useProxyMode(bool value) => _prefs?.setBool(_keyUseProxyMode, value);
 
-  String get proxyBaseUrl => _prefs?.getString(_keyProxyBaseUrl) ?? 'http://localhost:3000/api/payment';
+  String get proxyBaseUrl =>
+      _prefs?.getString(_keyProxyBaseUrl) ??
+      'http://localhost:3000/api/payment';
   set proxyBaseUrl(String value) => _prefs?.setString(_keyProxyBaseUrl, value);
 
   String? get proxyAuthToken => _prefs?.getString(_keyProxyAuthToken);

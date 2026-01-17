@@ -658,7 +658,8 @@ class PayTRProvider implements PaymentProvider {
       PaymentUtils.generateConversationId(prefix: 'REQ');
 
   /// Formats amount to cents string using shared utility
-  String _formatAmount(double amount) => PaymentUtils.amountToCentsString(amount);
+  String _formatAmount(double amount) =>
+      PaymentUtils.amountToCentsString(amount);
 
   /// PayTR uses 'TL' instead of 'TRY' for Turkish Lira
   String _mapCurrency(Currency currency) =>

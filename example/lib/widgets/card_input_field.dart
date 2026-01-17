@@ -201,7 +201,8 @@ class CVVField extends StatelessWidget {
             if (!CardValidator.isValidCVV(v)) return 'Invalid CVV';
             return null;
           },
-      buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+      buildCounter:
+          (_, {required currentLength, required isFocused, maxLength}) => null,
     );
   }
 }

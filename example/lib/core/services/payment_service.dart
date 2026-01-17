@@ -86,7 +86,8 @@ class PaymentService {
     if (config == null || config.isEmpty) {
       throw PaymentException(
         code: 'CONFIG_MISSING',
-        message: 'Provider configuration not found. Please configure $providerType in Settings.',
+        message:
+            'Provider configuration not found. Please configure $providerType in Settings.',
       );
     }
 
@@ -121,7 +122,8 @@ class PaymentService {
             secretKey: config['secretKey'] ?? '',
             successUrl: config['successUrl'] ?? 'https://example.com/success',
             failUrl: config['failUrl'] ?? 'https://example.com/fail',
-            callbackUrl: config['callbackUrl'] ?? 'https://example.com/callback',
+            callbackUrl:
+                config['callbackUrl'] ?? 'https://example.com/callback',
             isSandbox: isSandbox,
           ),
         );
@@ -170,7 +172,8 @@ class PaymentService {
   }
 
   /// Initialize proxy provider for backend mode
-  Future<void> _initializeProxyProvider(String providerType, RequestLogger requestLogger) async {
+  Future<void> _initializeProxyProvider(
+      String providerType, RequestLogger requestLogger) async {
     final storage = StorageService.instance;
 
     final proxyConfig = ProxyConfig(
@@ -254,7 +257,14 @@ class ProviderInfo {
       description: 'Popular Turkish payment gateway with iframe checkout',
       supportsSavedCards: false,
       supports3DS: true,
-      requiredFields: ['merchantId', 'apiKey', 'secretKey', 'successUrl', 'failUrl', 'callbackUrl'],
+      requiredFields: [
+        'merchantId',
+        'apiKey',
+        'secretKey',
+        'successUrl',
+        'failUrl',
+        'callbackUrl'
+      ],
     ),
     ProviderInfo(
       id: 'sipay',

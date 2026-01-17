@@ -20,7 +20,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   // Card controllers
   final _nameController = TextEditingController(text: 'JOHN DOE');
-  final _cardNumberController = TextEditingController(text: '5528 7900 0000 0008');
+  final _cardNumberController =
+      TextEditingController(text: '5528 7900 0000 0008');
   final _expiryController = TextEditingController(text: '12/30');
   final _cvvController = TextEditingController(text: '123');
 
@@ -85,10 +86,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       children: [
                         const Icon(Icons.payment),
                         const SizedBox(width: 8),
-                        Text('Provider: ${state.currentProvider.toUpperCase()}'),
+                        Text(
+                            'Provider: ${state.currentProvider.toUpperCase()}'),
                         const Spacer(),
                         Chip(
-                          label: Text(state.useSandbox ? 'Sandbox' : 'Production'),
+                          label:
+                              Text(state.useSandbox ? 'Sandbox' : 'Production'),
                           visualDensity: VisualDensity.compact,
                         ),
                       ],
@@ -134,7 +137,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   keyboardType: TextInputType.number,
                   validator: (v) {
                     final amount = double.tryParse(v ?? '');
-                    if (amount == null || amount <= 0) return 'Enter valid amount';
+                    if (amount == null || amount <= 0)
+                      return 'Enter valid amount';
                     return null;
                   },
                 ),
@@ -163,10 +167,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   items: List.generate(12, (i) => i + 1)
                       .map((n) => DropdownMenuItem(
                             value: n,
-                            child: Text(n == 1 ? 'Single Payment' : '$n Installments'),
+                            child: Text(
+                                n == 1 ? 'Single Payment' : '$n Installments'),
                           ))
                       .toList(),
-                  onChanged: _isLoading ? null : (v) => setState(() => _installment = v!),
+                  onChanged: _isLoading
+                      ? null
+                      : (v) => setState(() => _installment = v!),
                 ),
                 const SizedBox(height: 24),
 
@@ -292,9 +299,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   PaymentRequest _buildPaymentRequest() {
     final expiryParts = _expiryController.text.split('/');
-    final expireYear = expiryParts[1].length == 2
-        ? '20${expiryParts[1]}'
-        : expiryParts[1];
+    final expireYear =
+        expiryParts[1].length == 2 ? '20${expiryParts[1]}' : expiryParts[1];
 
     return PaymentRequest(
       orderId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
@@ -356,7 +362,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (!mounted) throw Exception('Widget disposed');
 
     // Check if WebView is needed
-    if (threeDSResult.htmlContent == null && threeDSResult.redirectUrl == null) {
+    if (threeDSResult.htmlContent == null &&
+        threeDSResult.redirectUrl == null) {
       // 3DS not required, direct result
       if (threeDSResult.status == ThreeDSStatus.completed) {
         return PaymentResult(

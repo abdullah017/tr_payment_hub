@@ -143,7 +143,8 @@ void main() {
 
       expect(loggedEntries.length, equals(1));
       expect(loggedEntries.first.method, equals('POST'));
-      expect(loggedEntries.first.url, equals('https://api.example.com/payment'));
+      expect(
+          loggedEntries.first.url, equals('https://api.example.com/payment'));
       expect(loggedEntries.first.body, equals('{"amount": 100}'));
     });
 

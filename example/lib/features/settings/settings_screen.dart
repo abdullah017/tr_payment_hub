@@ -244,7 +244,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       leading: const Icon(Icons.history),
                       title: const Text('Clear Transaction History'),
-                      subtitle: Text('${state.transactionHistory.length} transactions'),
+                      subtitle: Text(
+                          '${state.transactionHistory.length} transactions'),
                       onTap: () {
                         state.clearTransactionHistory();
                         _showSnackBar(context, 'History cleared');
@@ -252,7 +253,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.delete_forever, color: Colors.red),
+                      leading:
+                          const Icon(Icons.delete_forever, color: Colors.red),
                       title: const Text('Reset All Settings'),
                       subtitle: const Text('Clear all data and configurations'),
                       onTap: () => _confirmReset(context, state),
@@ -326,7 +328,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+  void _showSnackBar(BuildContext context, String message,
+      {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -337,7 +340,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _editProxyConfig(BuildContext context, AppState state) {
     final urlController = TextEditingController(text: state.proxyBaseUrl);
-    final tokenController = TextEditingController(text: state.proxyAuthToken ?? '');
+    final tokenController =
+        TextEditingController(text: state.proxyAuthToken ?? '');
 
     showDialog(
       context: context,
@@ -376,7 +380,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton(
             onPressed: () {
               state.proxyBaseUrl = urlController.text;
-              state.proxyAuthToken = tokenController.text.isEmpty ? null : tokenController.text;
+              state.proxyAuthToken =
+                  tokenController.text.isEmpty ? null : tokenController.text;
               Navigator.pop(context);
               _showSnackBar(context, 'Backend configuration saved');
             },
@@ -475,7 +480,6 @@ class _ProviderConfigScreenState extends State<ProviderConfigScreen> {
                   'Enter your ${widget.provider.name} API credentials. These are stored locally on your device.',
             ),
             const SizedBox(height: 24),
-
             ...widget.provider.requiredFields.map((field) {
               final isSecret = field.toLowerCase().contains('secret') ||
                   field.toLowerCase().contains('key');
@@ -488,14 +492,13 @@ class _ProviderConfigScreenState extends State<ProviderConfigScreen> {
                     border: const OutlineInputBorder(),
                   ),
                   obscureText: isSecret,
-                  validator: (v) =>
-                      v?.isEmpty ?? true ? '${_formatFieldName(field)} is required' : null,
+                  validator: (v) => v?.isEmpty ?? true
+                      ? '${_formatFieldName(field)} is required'
+                      : null,
                 ),
               );
             }),
-
             const SizedBox(height: 24),
-
             FilledButton(
               onPressed: _isLoading ? null : _saveConfig,
               child: _isLoading
@@ -543,7 +546,9 @@ class _ProviderConfigScreenState extends State<ProviderConfigScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${widget.provider.name} configured and activated')),
+          SnackBar(
+              content:
+                  Text('${widget.provider.name} configured and activated')),
         );
       }
     } catch (e) {

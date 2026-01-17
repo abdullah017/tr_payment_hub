@@ -583,7 +583,8 @@ class ParamProvider implements PaymentProvider {
   String _generateOrderId() => PaymentUtils.generateOrderId(prefix: 'PARAM');
 
   /// Formats amount to cents string using PaymentUtils
-  String _formatAmount(double amount) => PaymentUtils.amountToCentsString(amount);
+  String _formatAmount(double amount) =>
+      PaymentUtils.amountToCentsString(amount);
 
   /// Parses cents amount from API response
   double _parseAmount(String? value) {

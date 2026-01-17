@@ -15,7 +15,8 @@ class InstallmentsScreen extends StatefulWidget {
 }
 
 class _InstallmentsScreenState extends State<InstallmentsScreen> {
-  final _cardNumberController = TextEditingController(text: '5528 7900 0000 0008');
+  final _cardNumberController =
+      TextEditingController(text: '5528 7900 0000 0008');
   final _amountController = TextEditingController(text: '1000.00');
 
   bool _isLoading = false;
@@ -56,7 +57,8 @@ class _InstallmentsScreenState extends State<InstallmentsScreen> {
               // Info Card
               InfoCard.info(
                 title: 'How it works',
-                message: 'Enter the first 6-8 digits of a card number (BIN) and '
+                message:
+                    'Enter the first 6-8 digits of a card number (BIN) and '
                     'the payment amount to see available installment options.',
               ),
               const SizedBox(height: 24),
@@ -202,7 +204,8 @@ class _InstallmentsScreenState extends State<InstallmentsScreen> {
   Widget _buildInstallmentOption(InstallmentOption option) {
     final theme = Theme.of(context);
     final totalAmount = option.totalPrice;
-    final extraCost = totalAmount - (double.tryParse(_amountController.text) ?? 0);
+    final extraCost =
+        totalAmount - (double.tryParse(_amountController.text) ?? 0);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

@@ -77,7 +77,8 @@ class _LogsScreenState extends State<LogsScreen> {
               // Filter chip display
               if (_filterText.isNotEmpty || _showOnlyErrors)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Row(
                     children: [
@@ -94,7 +95,8 @@ class _LogsScreenState extends State<LogsScreen> {
                         const SizedBox(width: 4),
                         Chip(
                           label: const Text('Errors only'),
-                          onDeleted: () => setState(() => _showOnlyErrors = false),
+                          onDeleted: () =>
+                              setState(() => _showOnlyErrors = false),
                           visualDensity: VisualDensity.compact,
                         ),
                       ],
@@ -153,10 +155,9 @@ class _LogsScreenState extends State<LogsScreen> {
       // Filter by text
       if (_filterText.isNotEmpty) {
         final searchLower = _filterText.toLowerCase();
-        final matchesText =
-            log.method.toLowerCase().contains(searchLower) ||
-                log.url.toLowerCase().contains(searchLower) ||
-                (log.statusCode?.toString().contains(searchLower) ?? false);
+        final matchesText = log.method.toLowerCase().contains(searchLower) ||
+            log.url.toLowerCase().contains(searchLower) ||
+            (log.statusCode?.toString().contains(searchLower) ?? false);
         if (!matchesText) return false;
       }
 
@@ -415,7 +416,8 @@ class _LogsScreenState extends State<LogsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Clear Logs?'),
-        content: Text('Are you sure you want to clear ${state.logs.length} log entries?'),
+        content: Text(
+            'Are you sure you want to clear ${state.logs.length} log entries?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -514,8 +516,7 @@ class LogDetailSheet extends StatelessWidget {
                   _detailRow('Status', '${log.statusCode}'),
 
                 // Request Headers
-                if (log.headers != null &&
-                    log.headers!.isNotEmpty) ...[
+                if (log.headers != null && log.headers!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _sectionTitle('Headers'),
                   _codeBlock(_formatHeaders(log.headers!)),

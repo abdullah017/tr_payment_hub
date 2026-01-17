@@ -71,7 +71,8 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.credit_card,
                 title: 'Saved Cards',
                 description: 'Manage tokenized cards for one-click payments',
-                badge: state.paymentService.supportsSavedCards ? null : 'Limited',
+                badge:
+                    state.paymentService.supportsSavedCards ? null : 'Limited',
                 onTap: () => _navigateTo(context, const SavedCardsScreen()),
               ),
 
@@ -86,7 +87,8 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.search,
                 title: 'Transaction Status',
                 description: 'Query payment status by transaction ID',
-                onTap: () => _navigateTo(context, const TransactionStatusScreen()),
+                onTap: () =>
+                    _navigateTo(context, const TransactionStatusScreen()),
               ),
 
               const SizedBox(height: 24),
@@ -260,7 +262,8 @@ class HomeScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _testCardItem('Success', '5528790000000008', '12/30', '123'),
-              _testCardItem('Insufficient Funds', '4543590000000006', '12/30', '123'),
+              _testCardItem(
+                  'Insufficient Funds', '4543590000000006', '12/30', '123'),
               _testCardItem('Invalid Card', '4111111111111111', '12/30', '123'),
               const SizedBox(height: 16),
               const Text(

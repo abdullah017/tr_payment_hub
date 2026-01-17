@@ -5,9 +5,12 @@ void main() {
   group('PaymentWebViewStatus', () {
     test('should have 4 status values', () {
       expect(PaymentWebViewStatus.values.length, equals(4));
-      expect(PaymentWebViewStatus.values, contains(PaymentWebViewStatus.success));
-      expect(PaymentWebViewStatus.values, contains(PaymentWebViewStatus.cancelled));
-      expect(PaymentWebViewStatus.values, contains(PaymentWebViewStatus.timeout));
+      expect(
+          PaymentWebViewStatus.values, contains(PaymentWebViewStatus.success));
+      expect(PaymentWebViewStatus.values,
+          contains(PaymentWebViewStatus.cancelled));
+      expect(
+          PaymentWebViewStatus.values, contains(PaymentWebViewStatus.timeout));
       expect(PaymentWebViewStatus.values, contains(PaymentWebViewStatus.error));
     });
   });

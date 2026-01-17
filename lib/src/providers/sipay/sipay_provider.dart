@@ -355,7 +355,9 @@ class SipayProvider implements PaymentProvider {
     } else {
       _recordMetric(
         MetricNames.threeDSCompleteFailed,
-        tags: {'error_code': callbackData['error_code']?.toString() ?? 'failed'},
+        tags: {
+          'error_code': callbackData['error_code']?.toString() ?? 'failed'
+        },
       );
       return PaymentResult.failure(
         errorCode: callbackData['error_code']?.toString() ?? 'failed',
@@ -637,7 +639,8 @@ class SipayProvider implements PaymentProvider {
   }
 
   /// Maps currency using shared PaymentUtils
-  String _mapCurrency(Currency currency) => PaymentUtils.currencyToIso(currency);
+  String _mapCurrency(Currency currency) =>
+      PaymentUtils.currencyToIso(currency);
 
   double _parseDouble(String? value) {
     if (value == null || value.isEmpty) return 0;

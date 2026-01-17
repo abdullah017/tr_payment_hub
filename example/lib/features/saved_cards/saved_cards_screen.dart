@@ -54,7 +54,8 @@ class _SavedCardsScreenState extends State<SavedCardsScreen> {
                 padding: const EdgeInsets.all(24),
                 child: InfoCard.warning(
                   title: 'Feature Not Supported',
-                  message: '${state.currentProvider.toUpperCase()} does not support '
+                  message:
+                      '${state.currentProvider.toUpperCase()} does not support '
                       'saved cards. Try iyzico or Sipay for this feature.',
                 ),
               ),
