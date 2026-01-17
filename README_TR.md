@@ -31,7 +31,7 @@ Türkiye ödeme sistemleri için birleşik Flutter/Dart kütüphanesi.
 
 ```yaml
 dependencies:
-  tr_payment_hub: ^1.0.3
+  tr_payment_hub: ^3.2.0
 ```
 
 Ardından:

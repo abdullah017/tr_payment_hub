@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import '../../core/enums.dart';
 import '../../core/exceptions/payment_exception.dart';
+import '../../core/metrics/payment_metrics.dart';
 import '../../core/models/basket_item.dart';
 import '../../core/models/buyer_info.dart';
 import '../../core/models/installment_info.dart';
@@ -13,14 +14,29 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/circuit_breaker.dart';
 import '../../core/network/http_network_client.dart';
 import '../../core/network/network_client.dart';
+import '../../core/network/resilient_network_client.dart';
 import '../../core/payment_provider.dart';
 import '../../core/utils/payment_utils.dart';
 import 'paytr_auth.dart';
 import 'paytr_endpoints.dart';
 import 'paytr_error_mapper.dart';
 import 'paytr_mapper.dart';
+
+/// Internal class to track pending payments with timestamps for TTL cleanup.
+class _PendingPaymentEntry {
+  _PendingPaymentEntry(this.request) : createdAt = DateTime.now();
+
+  final PaymentRequest request;
+  final DateTime createdAt;
+
+  /// Check if this entry has expired based on TTL
+  bool isExpired(int ttlMinutes) {
+    return DateTime.now().difference(createdAt).inMinutes > ttlMinutes;
+  }
+}
 
 /// PayTR Payment Provider
 ///
@@ -39,6 +55,16 @@ import 'paytr_mapper.dart';
 /// await provider.initialize(config);
 /// ```
 ///
+/// ## Usage with Resilience (Retry + Circuit Breaker)
+///
+/// ```dart
+/// final provider = PayTRProvider(
+///   resilienceConfig: ResilienceConfig.forPayments,
+///   onResilienceEvent: (event) => print('Resilience: $event'),
+/// );
+/// await provider.initialize(config);
+/// ```
+///
 /// ## Testing with Mock HTTP Client
 ///
 /// ```dart
@@ -50,21 +76,40 @@ class PayTRProvider implements PaymentProvider {
   ///
   /// [networkClient] - Custom network client (Dio, etc.)
   /// [httpClient] - Legacy: http.Client for backward compatibility
+  /// [resilienceConfig] - Optional resilience configuration for retry/circuit breaker
+  /// [onResilienceEvent] - Optional callback for resilience events
+  /// [metricsCollector] - Optional metrics collector for monitoring
   PayTRProvider({
     NetworkClient? networkClient,
     http.Client? httpClient,
+    ResilienceConfig? resilienceConfig,
+    ResilienceCallback? onResilienceEvent,
+    MetricsCollector? metricsCollector,
   })  : _customNetworkClient = networkClient,
-        _customHttpClient = httpClient;
+        _customHttpClient = httpClient,
+        _resilienceConfig = resilienceConfig,
+        _onResilienceEvent = onResilienceEvent,
+        _metricsCollector = metricsCollector;
 
   final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
+  final ResilienceConfig? _resilienceConfig;
+  final ResilienceCallback? _onResilienceEvent;
+  final MetricsCollector? _metricsCollector;
   late PayTRConfig _config;
   late PayTRAuth _auth;
   NetworkClient? _networkClient;
+  ResilientNetworkClient? _resilientClient;
   bool _initialized = false;
 
-  // Bekleyen işlemleri takip etmek için
-  final Map<String, PaymentRequest> _pendingPayments = {};
+  /// Maximum number of pending payments to store (prevents unbounded growth)
+  static const _maxPendingPayments = 1000;
+
+  /// TTL for pending payments in minutes (default: 30 minutes)
+  static const _pendingPaymentTtlMinutes = 30;
+
+  /// Bekleyen işlemleri takip etmek için (with timestamps for cleanup)
+  final Map<String, _PendingPaymentEntry> _pendingPayments = {};
 
   @override
   ProviderType get providerType => ProviderType.paytr;
@@ -93,12 +138,26 @@ class PayTRProvider implements PaymentProvider {
     );
 
     // Priority: custom NetworkClient > legacy http.Client > default
+    NetworkClient baseClient;
     if (_customNetworkClient != null) {
-      _networkClient = _customNetworkClient;
+      baseClient = _customNetworkClient!;
     } else if (_customHttpClient != null) {
-      _networkClient = HttpNetworkClient(client: _customHttpClient);
+      baseClient = HttpNetworkClient(client: _customHttpClient);
     } else {
-      _networkClient = HttpNetworkClient();
+      baseClient = HttpNetworkClient();
+    }
+
+    // Wrap with resilience if configured
+    if (_resilienceConfig != null) {
+      _resilientClient = ResilientNetworkClient(
+        client: baseClient,
+        circuitName: 'paytr',
+        config: _resilienceConfig!,
+        onEvent: _onResilienceEvent,
+      );
+      _networkClient = _resilientClient;
+    } else {
+      _networkClient = baseClient;
     }
 
     _initialized = true;
@@ -107,6 +166,8 @@ class PayTRProvider implements PaymentProvider {
   @override
   Future<PaymentResult> createPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.paymentAttempt);
+    final stopwatch = Stopwatch()..start();
 
     // PayTR Direct API ile non-3DS ödeme
     // NOT: PayTR genellikle 3DS zorunlu tutar, bu yüzden çoğu durumda
@@ -143,7 +204,13 @@ class PayTRProvider implements PaymentProvider {
       // Callback beklemek gerekir
       // Bu durumda pending döndürüyoruz
       if (response['status'] == 'success') {
-        _pendingPayments[merchantOid] = request;
+        _addPendingPayment(merchantOid, request);
+        stopwatch.stop();
+        _recordMetric(
+          MetricNames.paymentSuccess,
+          value: request.amount,
+          duration: stopwatch.elapsed,
+        );
 
         return PaymentResult(
           isSuccess: true,
@@ -152,13 +219,32 @@ class PayTRProvider implements PaymentProvider {
           rawResponse: response,
         );
       } else {
+        stopwatch.stop();
+        _recordMetric(
+          MetricNames.paymentFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': response['reason']?.toString() ?? 'unknown'},
+        );
         throw PayTRErrorMapper.mapError(
           errorCode: response['reason']?.toString() ?? 'unknown',
           errorMessage: response['reason']?.toString() ?? 'Ödeme başlatılamadı',
         );
       }
     } catch (e) {
-      if (e is PaymentException) rethrow;
+      stopwatch.stop();
+      if (e is PaymentException) {
+        _recordMetric(
+          MetricNames.paymentFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': e.code},
+        );
+        rethrow;
+      }
+      _recordMetric(
+        MetricNames.paymentFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.paytr,
@@ -169,6 +255,8 @@ class PayTRProvider implements PaymentProvider {
   @override
   Future<ThreeDSInitResult> init3DSPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSInitAttempt);
+    final stopwatch = Stopwatch()..start();
 
     final merchantOid = _generateMerchantOid();
     final paymentAmount = _formatAmount(request.effectivePaidAmount);
@@ -217,7 +305,12 @@ class PayTRProvider implements PaymentProvider {
       final response = await _postForm(PayTREndpoints.iframeToken, body);
 
       if (response['status'] == 'success' && response['token'] != null) {
-        _pendingPayments[merchantOid] = request;
+        _addPendingPayment(merchantOid, request);
+        stopwatch.stop();
+        _recordMetric(
+          MetricNames.threeDSInitSuccess,
+          duration: stopwatch.elapsed,
+        );
 
         final iframeToken = response['token'] as String;
         final iframeUrl = 'https://www.paytr.com/odeme/guvenli/$iframeToken';
@@ -227,18 +320,35 @@ class PayTRProvider implements PaymentProvider {
           transactionId: merchantOid,
         );
       } else {
+        stopwatch.stop();
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': 'token_error'},
+        );
         return ThreeDSInitResult.failed(
           errorCode: 'token_error',
           errorMessage: response['reason']?.toString() ?? 'Token alınamadı',
         );
       }
     } catch (e) {
+      stopwatch.stop();
       if (e is PaymentException) {
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': e.code},
+        );
         return ThreeDSInitResult.failed(
           errorCode: e.code,
           errorMessage: e.message,
         );
       }
+      _recordMetric(
+        MetricNames.threeDSInitFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       return ThreeDSInitResult.failed(
         errorCode: 'network_error',
         errorMessage: e.toString(),
@@ -252,8 +362,13 @@ class PayTRProvider implements PaymentProvider {
     Map<String, dynamic>? callbackData,
   }) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSCompleteAttempt);
 
     if (callbackData == null) {
+      _recordMetric(
+        MetricNames.threeDSCompleteFailed,
+        tags: {'error_code': 'missing_callback_data'},
+      );
       throw const PaymentException(
         code: 'missing_callback_data',
         message: 'PayTR requires callback data to complete 3DS payment',
@@ -277,6 +392,10 @@ class PayTRProvider implements PaymentProvider {
       );
 
       if (!isValid) {
+        _recordMetric(
+          MetricNames.threeDSCompleteFailed,
+          tags: {'error_code': 'invalid_hash'},
+        );
         throw const PaymentException(
           code: 'invalid_hash',
           message: 'Callback hash doğrulaması başarısız',
@@ -288,12 +407,23 @@ class PayTRProvider implements PaymentProvider {
     // Pending payment'ı temizle
     _pendingPayments.remove(merchantOid);
 
-    return PayTRMapper.fromCallbackData(callbackData);
+    final result = PayTRMapper.fromCallbackData(callbackData);
+    if (result.isSuccess) {
+      _recordMetric(MetricNames.threeDSCompleteSuccess, value: result.amount);
+    } else {
+      _recordMetric(
+        MetricNames.threeDSCompleteFailed,
+        tags: {'error_code': result.errorCode ?? 'unknown'},
+      );
+    }
+    return result;
   }
 
   @override
   Future<RefundResult> refund(RefundRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.refundAttempt);
+    final stopwatch = Stopwatch()..start();
 
     final token = _auth.generateRefundToken(
       merchantOid: request.transactionId,
@@ -309,8 +439,29 @@ class PayTRProvider implements PaymentProvider {
 
     try {
       final response = await _postForm(PayTREndpoints.refund, body);
-      return PayTRMapper.fromRefundResponse(response);
+      final result = PayTRMapper.fromRefundResponse(response);
+      stopwatch.stop();
+      if (result.isSuccess) {
+        _recordMetric(
+          MetricNames.refundSuccess,
+          value: request.amount,
+          duration: stopwatch.elapsed,
+        );
+      } else {
+        _recordMetric(
+          MetricNames.refundFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
     } catch (e) {
+      stopwatch.stop();
+      _recordMetric(
+        MetricNames.refundFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       if (e is PaymentException) rethrow;
       return RefundResult.failure(
         errorCode: 'network_error',
@@ -431,11 +582,31 @@ class PayTRProvider implements PaymentProvider {
     );
   }
 
+  // ============================================
+  // RESILIENCE METHODS
+  // ============================================
+
+  /// Whether resilience (retry/circuit breaker) is enabled.
+  bool get isResilienceEnabled => _resilientClient != null;
+
+  /// Current circuit breaker state (null if resilience not enabled).
+  CircuitState? get circuitState => _resilientClient?.circuitState;
+
+  /// Whether the circuit is currently open (service unavailable).
+  bool get isCircuitOpen => _resilientClient?.isCircuitOpen ?? false;
+
+  /// Manually reset the circuit breaker to closed state.
+  void resetCircuit() => _resilientClient?.resetCircuit();
+
+  /// Force the circuit to open state.
+  void forceCircuitOpen() => _resilientClient?.forceCircuitOpen();
+
   @override
   void dispose() {
     if (_initialized) {
       _networkClient?.dispose();
       _networkClient = null;
+      _resilientClient = null;
       _pendingPayments.clear();
       _initialized = false;
     }
@@ -450,6 +621,31 @@ class PayTRProvider implements PaymentProvider {
       throw PaymentException.configError(
         message: 'Provider not initialized. Call initialize() first.',
         provider: ProviderType.paytr,
+      );
+    }
+  }
+
+  /// Records a metric event if metrics collector is configured.
+  void _recordMetric(
+    String name, {
+    double? value,
+    Duration? duration,
+    Map<String, String> tags = const {},
+  }) {
+    if (_metricsCollector == null) return;
+    if (duration != null) {
+      _metricsCollector!.timing(
+        name,
+        provider: ProviderType.paytr,
+        duration: duration,
+        tags: tags,
+      );
+    } else {
+      _metricsCollector!.increment(
+        name,
+        provider: ProviderType.paytr,
+        value: value ?? 1,
+        tags: tags,
       );
     }
   }
@@ -486,6 +682,50 @@ class PayTRProvider implements PaymentProvider {
   /// Uses shared PaymentUtils for default installment options
   List<InstallmentOption> _generateDefaultInstallmentOptions(double amount) =>
       PaymentUtils.generateDefaultInstallmentOptions(amount);
+
+  /// Adds a payment to the pending payments map with TTL and size limits.
+  ///
+  /// This method prevents memory leaks by:
+  /// - Cleaning up expired payments before adding new ones
+  /// - Enforcing a maximum size limit on the pending payments map
+  void _addPendingPayment(String merchantOid, PaymentRequest request) {
+    // Clean up expired payments first
+    _cleanupExpiredPayments();
+
+    // Enforce size limit - remove oldest entries if at capacity
+    if (_pendingPayments.length >= _maxPendingPayments) {
+      _removeOldestPayments(_pendingPayments.length - _maxPendingPayments + 1);
+    }
+
+    _pendingPayments[merchantOid] = _PendingPaymentEntry(request);
+  }
+
+  /// Removes expired pending payments based on TTL.
+  void _cleanupExpiredPayments() {
+    final expiredKeys = <String>[];
+    for (final entry in _pendingPayments.entries) {
+      if (entry.value.isExpired(_pendingPaymentTtlMinutes)) {
+        expiredKeys.add(entry.key);
+      }
+    }
+    for (final key in expiredKeys) {
+      _pendingPayments.remove(key);
+    }
+  }
+
+  /// Removes the oldest n payments from the map.
+  void _removeOldestPayments(int count) {
+    if (count <= 0 || _pendingPayments.isEmpty) return;
+
+    // Sort by creation time and remove oldest
+    final sortedEntries = _pendingPayments.entries.toList()
+      ..sort((a, b) => a.value.createdAt.compareTo(b.value.createdAt));
+
+    final toRemove = sortedEntries.take(count).map((e) => e.key).toList();
+    for (final key in toRemove) {
+      _pendingPayments.remove(key);
+    }
+  }
 
   Future<Map<String, dynamic>> _postForm(
     String endpoint,

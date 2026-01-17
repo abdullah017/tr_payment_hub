@@ -1,9 +1,14 @@
 import 'dart:convert';
+import 'dart:math';
+
 import 'package:crypto/crypto.dart';
 
 /// Hash ve şifreleme yardımcıları
 class HashUtils {
   HashUtils._();
+
+  /// Secure random instance for cryptographic operations
+  static final _secureRandom = Random.secure();
 
   /// HMAC-SHA256 hash oluştur
   static String hmacSha256(String data, String key) {
@@ -36,11 +41,44 @@ class HashUtils {
   /// Base64 decode
   static String base64Decode(String data) => utf8.decode(base64.decode(data));
 
-  /// Random string oluştur (conversationId vb. için)
+  /// Generates a cryptographically secure random hex string.
+  ///
+  /// **IMPORTANT**: This method uses [Random.secure()] for cryptographic
+  /// randomness. The previous implementation using timestamps was predictable
+  /// and should not be used for security-sensitive operations.
+  ///
+  /// Example:
+  /// ```dart
+  /// final key = HashUtils.generateRandomKey(32); // 32-char hex string
+  /// ```
+  ///
+  /// For most use cases, prefer [PaymentUtils.generateSecureHex()] instead.
   static String generateRandomKey([int length = 32]) {
-    final now = DateTime.now();
-    final data = '${now.millisecondsSinceEpoch}${now.microsecond}';
-    final hash = sha256Hash(data);
-    return hash.substring(0, length);
+    // Calculate bytes needed (2 hex chars per byte)
+    final bytesNeeded = (length / 2).ceil();
+    final bytes = List<int>.generate(
+      bytesNeeded,
+      (_) => _secureRandom.nextInt(256),
+    );
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return hex.substring(0, length);
+  }
+
+  /// Generates a secure random string with alphanumeric characters.
+  ///
+  /// This method generates a random string using [Random.secure()]
+  /// containing characters a-z, A-Z, and 0-9.
+  ///
+  /// Example:
+  /// ```dart
+  /// final token = HashUtils.generateSecureToken(24);
+  /// ```
+  static String generateSecureToken([int length = 24]) {
+    const chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return List.generate(
+      length,
+      (_) => chars[_secureRandom.nextInt(chars.length)],
+    ).join();
   }
 }

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import '../../core/enums.dart';
 import '../../core/exceptions/payment_exception.dart';
+import '../../core/metrics/payment_metrics.dart';
 import '../../core/models/buyer_info.dart';
 import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
@@ -13,8 +14,10 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/circuit_breaker.dart';
 import '../../core/network/http_network_client.dart';
 import '../../core/network/network_client.dart';
+import '../../core/network/resilient_network_client.dart';
 import '../../core/payment_provider.dart';
 import '../../core/utils/payment_utils.dart';
 import 'sipay_auth.dart';
@@ -50,6 +53,16 @@ import 'sipay_mapper.dart';
 /// await provider.initialize(config);
 /// ```
 ///
+/// ## Usage with Resilience (Retry + Circuit Breaker)
+///
+/// ```dart
+/// final provider = SipayProvider(
+///   resilienceConfig: ResilienceConfig.forPayments,
+///   onResilienceEvent: (event) => print('Resilience: $event'),
+/// );
+/// await provider.initialize(config);
+/// ```
+///
 /// ## Testing with Mock HTTP Client
 ///
 /// ```dart
@@ -61,17 +74,30 @@ class SipayProvider implements PaymentProvider {
   ///
   /// [networkClient] - Custom network client (Dio, etc.)
   /// [httpClient] - Legacy: http.Client for backward compatibility
+  /// [resilienceConfig] - Optional resilience configuration for retry/circuit breaker
+  /// [onResilienceEvent] - Optional callback for resilience events
+  /// [metricsCollector] - Optional metrics collector for monitoring
   SipayProvider({
     NetworkClient? networkClient,
     http.Client? httpClient,
+    ResilienceConfig? resilienceConfig,
+    ResilienceCallback? onResilienceEvent,
+    MetricsCollector? metricsCollector,
   })  : _customNetworkClient = networkClient,
-        _customHttpClient = httpClient;
+        _customHttpClient = httpClient,
+        _resilienceConfig = resilienceConfig,
+        _onResilienceEvent = onResilienceEvent,
+        _metricsCollector = metricsCollector;
 
   final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
+  final ResilienceConfig? _resilienceConfig;
+  final ResilienceCallback? _onResilienceEvent;
+  final MetricsCollector? _metricsCollector;
   late SipayConfig _config;
   late SipayAuth _auth;
   NetworkClient? _networkClient;
+  ResilientNetworkClient? _resilientClient;
   bool _initialized = false;
   String? _accessToken;
   DateTime? _tokenExpiry;
@@ -103,12 +129,26 @@ class SipayProvider implements PaymentProvider {
     );
 
     // Priority: custom NetworkClient > legacy http.Client > default
+    NetworkClient baseClient;
     if (_customNetworkClient != null) {
-      _networkClient = _customNetworkClient;
+      baseClient = _customNetworkClient!;
     } else if (_customHttpClient != null) {
-      _networkClient = HttpNetworkClient(client: _customHttpClient);
+      baseClient = HttpNetworkClient(client: _customHttpClient);
     } else {
-      _networkClient = HttpNetworkClient();
+      baseClient = HttpNetworkClient();
+    }
+
+    // Wrap with resilience if configured
+    if (_resilienceConfig != null) {
+      _resilientClient = ResilientNetworkClient(
+        client: baseClient,
+        circuitName: 'sipay',
+        config: _resilienceConfig!,
+        onEvent: _onResilienceEvent,
+      );
+      _networkClient = _resilientClient;
+    } else {
+      _networkClient = baseClient;
     }
 
     _initialized = true;
@@ -117,6 +157,8 @@ class SipayProvider implements PaymentProvider {
   @override
   Future<PaymentResult> createPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.paymentAttempt);
+    final stopwatch = Stopwatch()..start();
 
     final invoiceId = _generateInvoiceId();
     final hashKey = _auth.generatePaymentHash(
@@ -135,17 +177,41 @@ class SipayProvider implements PaymentProvider {
     try {
       final response = await _post(SipayEndpoints.paymentDirect, body);
       final result = SipayMapper.fromPaymentResponse(response);
+      stopwatch.stop();
 
       if (!result.isSuccess) {
+        _recordMetric(
+          MetricNames.paymentFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
         throw SipayErrorMapper.mapError(
           errorCode: result.errorCode ?? 'unknown',
           errorMessage: result.errorMessage ?? 'Bilinmeyen hata',
         );
       }
 
+      _recordMetric(
+        MetricNames.paymentSuccess,
+        value: request.amount,
+        duration: stopwatch.elapsed,
+      );
       return result;
     } catch (e) {
-      if (e is PaymentException) rethrow;
+      stopwatch.stop();
+      if (e is PaymentException) {
+        _recordMetric(
+          MetricNames.paymentFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': e.code},
+        );
+        rethrow;
+      }
+      _recordMetric(
+        MetricNames.paymentFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.sipay,
@@ -156,8 +222,14 @@ class SipayProvider implements PaymentProvider {
   @override
   Future<ThreeDSInitResult> init3DSPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSInitAttempt);
+    final stopwatch = Stopwatch()..start();
 
     if (request.callbackUrl == null || request.callbackUrl!.isEmpty) {
+      _recordMetric(
+        MetricNames.threeDSInitFailed,
+        tags: {'error_code': 'missing_callback_url'},
+      );
       throw PaymentException.configError(
         message: 'callbackUrl is required for 3DS payment',
         provider: ProviderType.sipay,
@@ -182,14 +254,39 @@ class SipayProvider implements PaymentProvider {
 
     try {
       final response = await _post(SipayEndpoints.payment, body);
-      return SipayMapper.from3DSInitResponse(response);
+      final result = SipayMapper.from3DSInitResponse(response);
+      stopwatch.stop();
+      if (result.status == ThreeDSStatus.pending) {
+        _recordMetric(
+          MetricNames.threeDSInitSuccess,
+          duration: stopwatch.elapsed,
+        );
+      } else {
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
     } catch (e) {
+      stopwatch.stop();
       if (e is PaymentException) {
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': e.code},
+        );
         return ThreeDSInitResult.failed(
           errorCode: e.code,
           errorMessage: e.message,
         );
       }
+      _recordMetric(
+        MetricNames.threeDSInitFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       return ThreeDSInitResult.failed(
         errorCode: 'network_error',
         errorMessage: e.toString(),
@@ -203,8 +300,13 @@ class SipayProvider implements PaymentProvider {
     Map<String, dynamic>? callbackData,
   }) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSCompleteAttempt);
 
     if (callbackData == null) {
+      _recordMetric(
+        MetricNames.threeDSCompleteFailed,
+        tags: {'error_code': 'missing_callback_data'},
+      );
       throw const PaymentException(
         code: 'missing_callback_data',
         message: 'Sipay requires callback data to complete 3DS payment',
@@ -228,6 +330,10 @@ class SipayProvider implements PaymentProvider {
       );
 
       if (!isValid) {
+        _recordMetric(
+          MetricNames.threeDSCompleteFailed,
+          tags: {'error_code': 'invalid_hash'},
+        );
         throw const PaymentException(
           code: 'invalid_hash',
           message: 'Callback hash doğrulaması başarısız',
@@ -238,13 +344,19 @@ class SipayProvider implements PaymentProvider {
 
     // Status kontrolü
     if (status == 'success' || status == 'completed') {
+      final amount = _parseDouble(callbackData['amount']?.toString());
+      _recordMetric(MetricNames.threeDSCompleteSuccess, value: amount);
       return PaymentResult.success(
         transactionId: orderId ?? invoiceId,
-        amount: _parseDouble(callbackData['amount']?.toString()),
+        amount: amount,
         paidAmount: _parseDouble(callbackData['total']?.toString()),
         rawResponse: callbackData,
       );
     } else {
+      _recordMetric(
+        MetricNames.threeDSCompleteFailed,
+        tags: {'error_code': callbackData['error_code']?.toString() ?? 'failed'},
+      );
       return PaymentResult.failure(
         errorCode: callbackData['error_code']?.toString() ?? 'failed',
         errorMessage:
@@ -257,6 +369,8 @@ class SipayProvider implements PaymentProvider {
   @override
   Future<RefundResult> refund(RefundRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.refundAttempt);
+    final stopwatch = Stopwatch()..start();
 
     final hashKey = _auth.generateRefundHash(
       invoiceId: request.transactionId,
@@ -272,8 +386,29 @@ class SipayProvider implements PaymentProvider {
 
     try {
       final response = await _post(SipayEndpoints.refund, body);
-      return SipayMapper.fromRefundResponse(response);
+      final result = SipayMapper.fromRefundResponse(response);
+      stopwatch.stop();
+      if (result.isSuccess) {
+        _recordMetric(
+          MetricNames.refundSuccess,
+          value: request.amount,
+          duration: stopwatch.elapsed,
+        );
+      } else {
+        _recordMetric(
+          MetricNames.refundFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
     } catch (e) {
+      stopwatch.stop();
+      _recordMetric(
+        MetricNames.refundFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       if (e is PaymentException) rethrow;
       return RefundResult.failure(
         errorCode: 'network_error',
@@ -423,11 +558,31 @@ class SipayProvider implements PaymentProvider {
     }
   }
 
+  // ============================================
+  // RESILIENCE METHODS
+  // ============================================
+
+  /// Whether resilience (retry/circuit breaker) is enabled.
+  bool get isResilienceEnabled => _resilientClient != null;
+
+  /// Current circuit breaker state (null if resilience not enabled).
+  CircuitState? get circuitState => _resilientClient?.circuitState;
+
+  /// Whether the circuit is currently open (service unavailable).
+  bool get isCircuitOpen => _resilientClient?.isCircuitOpen ?? false;
+
+  /// Manually reset the circuit breaker to closed state.
+  void resetCircuit() => _resilientClient?.resetCircuit();
+
+  /// Force the circuit to open state.
+  void forceCircuitOpen() => _resilientClient?.forceCircuitOpen();
+
   @override
   void dispose() {
     if (_initialized) {
       _networkClient?.dispose();
       _networkClient = null;
+      _resilientClient = null;
       _accessToken = null;
       _tokenExpiry = null;
       _initialized = false;
@@ -443,6 +598,31 @@ class SipayProvider implements PaymentProvider {
       throw PaymentException.configError(
         message: 'Provider not initialized. Call initialize() first.',
         provider: ProviderType.sipay,
+      );
+    }
+  }
+
+  /// Records a metric event if metrics collector is configured.
+  void _recordMetric(
+    String name, {
+    double? value,
+    Duration? duration,
+    Map<String, String> tags = const {},
+  }) {
+    if (_metricsCollector == null) return;
+    if (duration != null) {
+      _metricsCollector!.timing(
+        name,
+        provider: ProviderType.sipay,
+        duration: duration,
+        tags: tags,
+      );
+    } else {
+      _metricsCollector!.increment(
+        name,
+        provider: ProviderType.sipay,
+        value: value ?? 1,
+        tags: tags,
       );
     }
   }

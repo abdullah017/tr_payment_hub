@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import '../../core/enums.dart';
 import '../../core/exceptions/payment_exception.dart';
+import '../../core/metrics/payment_metrics.dart';
 import '../../core/models/buyer_info.dart';
 import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
@@ -12,8 +13,10 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/circuit_breaker.dart';
 import '../../core/network/http_network_client.dart';
 import '../../core/network/network_client.dart';
+import '../../core/network/resilient_network_client.dart';
 import '../../core/payment_provider.dart';
 import 'iyzico_auth.dart';
 import 'iyzico_endpoints.dart';
@@ -37,6 +40,27 @@ import 'iyzico_mapper.dart';
 /// await provider.initialize(config);
 /// ```
 ///
+/// ## Usage with Resilience (Retry + Circuit Breaker)
+///
+/// ```dart
+/// final provider = IyzicoProvider(
+///   resilienceConfig: ResilienceConfig.forPayments,
+///   onResilienceEvent: (event) => print('Resilience: $event'),
+/// );
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Usage with Metrics Collection
+///
+/// ```dart
+/// final metrics = InMemoryMetricsCollector();
+/// final provider = IyzicoProvider(metricsCollector: metrics);
+/// await provider.initialize(config);
+///
+/// // Later, get aggregated stats
+/// final stats = metrics.getAggregated(ProviderType.iyzico);
+/// ```
+///
 /// ## Testing with Mock HTTP Client
 ///
 /// ```dart
@@ -48,17 +72,30 @@ class IyzicoProvider implements PaymentProvider {
   ///
   /// [networkClient] - Custom network client (Dio, etc.)
   /// [httpClient] - Legacy: http.Client for backward compatibility
+  /// [resilienceConfig] - Optional resilience configuration for retry/circuit breaker
+  /// [onResilienceEvent] - Optional callback for resilience events
+  /// [metricsCollector] - Optional metrics collector for monitoring
   IyzicoProvider({
     NetworkClient? networkClient,
     http.Client? httpClient,
+    ResilienceConfig? resilienceConfig,
+    ResilienceCallback? onResilienceEvent,
+    MetricsCollector? metricsCollector,
   })  : _customNetworkClient = networkClient,
-        _customHttpClient = httpClient;
+        _customHttpClient = httpClient,
+        _resilienceConfig = resilienceConfig,
+        _onResilienceEvent = onResilienceEvent,
+        _metricsCollector = metricsCollector;
 
   final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
+  final ResilienceConfig? _resilienceConfig;
+  final ResilienceCallback? _onResilienceEvent;
+  final MetricsCollector? _metricsCollector;
   late IyzicoConfig _config;
   late IyzicoAuth _auth;
   NetworkClient? _networkClient;
+  ResilientNetworkClient? _resilientClient;
   bool _initialized = false;
 
   @override
@@ -84,12 +121,26 @@ class IyzicoProvider implements PaymentProvider {
     _auth = IyzicoAuth(apiKey: config.apiKey, secretKey: config.secretKey);
 
     // Priority: custom NetworkClient > legacy http.Client > default
+    NetworkClient baseClient;
     if (_customNetworkClient != null) {
-      _networkClient = _customNetworkClient;
+      baseClient = _customNetworkClient!;
     } else if (_customHttpClient != null) {
-      _networkClient = HttpNetworkClient(client: _customHttpClient);
+      baseClient = HttpNetworkClient(client: _customHttpClient);
     } else {
-      _networkClient = HttpNetworkClient();
+      baseClient = HttpNetworkClient();
+    }
+
+    // Wrap with resilience if configured
+    if (_resilienceConfig != null) {
+      _resilientClient = ResilientNetworkClient(
+        client: baseClient,
+        circuitName: 'iyzico',
+        config: _resilienceConfig!,
+        onEvent: _onResilienceEvent,
+      );
+      _networkClient = _resilientClient;
+    } else {
+      _networkClient = baseClient;
     }
 
     _initialized = true;
@@ -98,25 +149,50 @@ class IyzicoProvider implements PaymentProvider {
   @override
   Future<PaymentResult> createPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.paymentAttempt);
+    final stopwatch = Stopwatch()..start();
 
-    final conversationId = _generateConversationId();
-    final body = IyzicoMapper.toPaymentRequest(request, conversationId);
+    try {
+      final conversationId = _generateConversationId();
+      final body = IyzicoMapper.toPaymentRequest(request, conversationId);
 
-    final response = await _post(IyzicoEndpoints.createPayment, body);
+      final response = await _post(IyzicoEndpoints.createPayment, body);
 
-    if (response['status'] == 'success') {
-      return IyzicoMapper.fromPaymentResponse(response);
-    } else {
-      throw IyzicoErrorMapper.mapError(
-        errorCode: response['errorCode']?.toString() ?? 'unknown',
-        errorMessage: response['errorMessage']?.toString() ?? 'Unknown error',
-      );
+      if (response['status'] == 'success') {
+        final result = IyzicoMapper.fromPaymentResponse(response);
+        stopwatch.stop();
+        _recordMetric(
+          MetricNames.paymentSuccess,
+          value: result.amount,
+          duration: stopwatch.elapsed,
+        );
+        return result;
+      } else {
+        final errorCode = response['errorCode']?.toString() ?? 'unknown';
+        _recordMetric(
+          MetricNames.paymentFailed,
+          tags: {'error_code': errorCode},
+        );
+        throw IyzicoErrorMapper.mapError(
+          errorCode: errorCode,
+          errorMessage: response['errorMessage']?.toString() ?? 'Unknown error',
+        );
+      }
+    } catch (e) {
+      if (e is! PaymentException) {
+        _recordMetric(
+          MetricNames.paymentFailed,
+          tags: {'error_code': 'exception'},
+        );
+      }
+      rethrow;
     }
   }
 
   @override
   Future<ThreeDSInitResult> init3DSPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSInitAttempt);
 
     if (request.callbackUrl == null || request.callbackUrl!.isEmpty) {
       throw PaymentException.configError(
@@ -125,16 +201,33 @@ class IyzicoProvider implements PaymentProvider {
       );
     }
 
-    final conversationId = _generateConversationId();
-    final body = IyzicoMapper.to3DSInitRequest(
-      request,
-      conversationId,
-      request.callbackUrl!,
-    );
+    try {
+      final conversationId = _generateConversationId();
+      final body = IyzicoMapper.to3DSInitRequest(
+        request,
+        conversationId,
+        request.callbackUrl!,
+      );
 
-    final response = await _post(IyzicoEndpoints.init3DS, body);
+      final response = await _post(IyzicoEndpoints.init3DS, body);
+      final result = IyzicoMapper.from3DSInitResponse(response);
 
-    return IyzicoMapper.from3DSInitResponse(response);
+      if (result.isSuccess || result.status == ThreeDSStatus.pending) {
+        _recordMetric(MetricNames.threeDSInitSuccess);
+      } else {
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
+    } catch (e) {
+      _recordMetric(
+        MetricNames.threeDSInitFailed,
+        tags: {'error_code': 'exception'},
+      );
+      rethrow;
+    }
   }
 
   @override
@@ -143,43 +236,89 @@ class IyzicoProvider implements PaymentProvider {
     Map<String, dynamic>? callbackData,
   }) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSCompleteAttempt);
+    final stopwatch = Stopwatch()..start();
 
-    // callbackData'dan paymentId al
-    final paymentId = callbackData?['paymentId'] ?? transactionId;
+    try {
+      // callbackData'dan paymentId al
+      final paymentId = callbackData?['paymentId'] ?? transactionId;
 
-    final body = {
-      'locale': 'tr',
-      'conversationId': _generateConversationId(),
-      'paymentId': paymentId,
-    };
+      final body = {
+        'locale': 'tr',
+        'conversationId': _generateConversationId(),
+        'paymentId': paymentId,
+      };
 
-    // Eğer callback'ten gelen data varsa, onu kullan
-    if (callbackData != null && callbackData.containsKey('conversationData')) {
-      body['conversationData'] = callbackData['conversationData'];
-    }
+      // Eğer callback'ten gelen data varsa, onu kullan
+      if (callbackData != null &&
+          callbackData.containsKey('conversationData')) {
+        body['conversationData'] = callbackData['conversationData'];
+      }
 
-    final response = await _post(IyzicoEndpoints.complete3DS, body);
+      final response = await _post(IyzicoEndpoints.complete3DS, body);
 
-    if (response['status'] == 'success') {
-      return IyzicoMapper.fromPaymentResponse(response);
-    } else {
-      throw IyzicoErrorMapper.mapError(
-        errorCode: response['errorCode']?.toString() ?? 'unknown',
-        errorMessage: response['errorMessage']?.toString() ?? 'Unknown error',
-      );
+      if (response['status'] == 'success') {
+        final result = IyzicoMapper.fromPaymentResponse(response);
+        stopwatch.stop();
+        _recordMetric(
+          MetricNames.threeDSCompleteSuccess,
+          value: result.amount,
+          duration: stopwatch.elapsed,
+        );
+        return result;
+      } else {
+        final errorCode = response['errorCode']?.toString() ?? 'unknown';
+        _recordMetric(
+          MetricNames.threeDSCompleteFailed,
+          tags: {'error_code': errorCode},
+        );
+        throw IyzicoErrorMapper.mapError(
+          errorCode: errorCode,
+          errorMessage: response['errorMessage']?.toString() ?? 'Unknown error',
+        );
+      }
+    } catch (e) {
+      if (e is! PaymentException) {
+        _recordMetric(
+          MetricNames.threeDSCompleteFailed,
+          tags: {'error_code': 'exception'},
+        );
+      }
+      rethrow;
     }
   }
 
   @override
   Future<RefundResult> refund(RefundRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.refundAttempt);
 
-    final conversationId = _generateConversationId();
-    final body = IyzicoMapper.toRefundRequest(request, conversationId);
+    try {
+      final conversationId = _generateConversationId();
+      final body = IyzicoMapper.toRefundRequest(request, conversationId);
 
-    final response = await _post(IyzicoEndpoints.refund, body);
+      final response = await _post(IyzicoEndpoints.refund, body);
+      final result = IyzicoMapper.fromRefundResponse(response);
 
-    return IyzicoMapper.fromRefundResponse(response);
+      if (result.isSuccess) {
+        _recordMetric(
+          MetricNames.refundSuccess,
+          value: result.refundedAmount,
+        );
+      } else {
+        _recordMetric(
+          MetricNames.refundFailed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
+    } catch (e) {
+      _recordMetric(
+        MetricNames.refundFailed,
+        tags: {'error_code': 'exception'},
+      );
+      rethrow;
+    }
   }
 
   @override
@@ -365,11 +504,35 @@ class IyzicoProvider implements PaymentProvider {
     return response['status'] == 'success';
   }
 
+  // ============================================
+  // RESILIENCE METHODS
+  // ============================================
+
+  /// Whether resilience (retry/circuit breaker) is enabled.
+  bool get isResilienceEnabled => _resilientClient != null;
+
+  /// Current circuit breaker state (null if resilience not enabled).
+  CircuitState? get circuitState => _resilientClient?.circuitState;
+
+  /// Whether the circuit is currently open (service unavailable).
+  bool get isCircuitOpen => _resilientClient?.isCircuitOpen ?? false;
+
+  /// Manually reset the circuit breaker to closed state.
+  ///
+  /// Use this when you know the service has recovered.
+  void resetCircuit() => _resilientClient?.resetCircuit();
+
+  /// Force the circuit to open state.
+  ///
+  /// Use this to manually stop requests to the service.
+  void forceCircuitOpen() => _resilientClient?.forceCircuitOpen();
+
   @override
   void dispose() {
     if (_initialized) {
       _networkClient?.dispose();
       _networkClient = null;
+      _resilientClient = null;
       _initialized = false;
     }
   }
@@ -383,6 +546,32 @@ class IyzicoProvider implements PaymentProvider {
       throw PaymentException.configError(
         message: 'Provider not initialized. Call initialize() first.',
         provider: ProviderType.iyzico,
+      );
+    }
+  }
+
+  /// Records a metric event if metrics collector is configured.
+  void _recordMetric(
+    String name, {
+    double? value,
+    Duration? duration,
+    Map<String, String> tags = const {},
+  }) {
+    if (_metricsCollector == null) return;
+
+    if (duration != null) {
+      _metricsCollector!.timing(
+        name,
+        provider: ProviderType.iyzico,
+        duration: duration,
+        tags: tags,
+      );
+    } else {
+      _metricsCollector!.increment(
+        name,
+        provider: ProviderType.iyzico,
+        value: value ?? 1,
+        tags: tags,
       );
     }
   }

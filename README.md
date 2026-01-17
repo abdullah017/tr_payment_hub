@@ -23,12 +23,15 @@ Unified Turkish payment gateway integration for Flutter/Dart applications.
 - **PaymentWebView** - Built-in 3DS WebView widget for Flutter apps (v3.1+)
 - **Proxy Mode** - Secure Flutter + Custom Backend architecture (v3.0+)
 - **NetworkClient** - HTTP client abstraction (Dio, http, or custom) (v3.1+)
+- **Request Logging** - HTTP request/response logging with `RequestLogger` (v3.2+)
+- **Metrics Collection** - Payment operation metrics with `PaymentMetrics` (v3.2+)
 - **Type Safe** - Full Dart null safety support
 - **Secure** - Automatic sensitive data masking with LogSanitizer
 - **Testable** - Built-in MockPaymentProvider for unit testing
 - **Cross Platform** - Works on iOS, Android, Web, and Desktop
 - **Saved Cards** - Card tokenization support (iyzico, Sipay)
 - **Client Validation** - CardValidator and RequestValidator for client-side validation
+- **Example App** - Complete Flutter app demonstrating all features (v3.2+)
 
 ## Usage Modes
 
@@ -109,7 +112,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tr_payment_hub: ^3.1.0
+  tr_payment_hub: ^3.2.0
 ```
 
 Then run:
@@ -422,6 +425,62 @@ if (issues.isNotEmpty) {
   print('Warning: $issues');
 }
 config.assertProduction(); // Throws if sandbox mode
+```
+
+## v3.2 Features
+
+### Complete Example App
+The `example/` folder now contains a production-ready Flutter app demonstrating all features:
+
+```bash
+cd example
+flutter pub get
+flutter run
+```
+
+**Features:**
+- Payment processing with 3DS support
+- Installment queries
+- Saved cards management
+- Refund processing
+- Transaction status lookup
+- HTTP request/response logs
+- Direct Mode & Proxy Mode support
+- Light/Dark theme
+
+### Request Logging
+Track all HTTP requests and responses:
+
+```dart
+final logger = RequestLogger(
+  config: RequestLoggerConfig.full,
+  onLog: (entry) => print('${entry.method} ${entry.url} - ${entry.statusCode}'),
+);
+
+final provider = IyzicoProvider(
+  networkClient: HttpNetworkClient(requestLogger: logger),
+);
+```
+
+### Metrics Collection
+Monitor payment operations:
+
+```dart
+final metrics = InMemoryMetricsCollector();
+final provider = IyzicoProvider(metricsCollector: metrics);
+
+// After operations
+print('Total payments: ${metrics.getMetricCount("payment")}');
+print('Success rate: ${metrics.getSuccessRate("payment")}%');
+```
+
+### Backend Example (Node.js)
+Ready-to-use Express.js backend for Proxy Mode:
+
+```bash
+cd example/backend
+cp .env.example .env  # Add your API keys
+npm install && npm start
 ```
 
 ## v3.1 Features

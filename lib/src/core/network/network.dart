@@ -47,4 +47,5 @@ library;
 export 'circuit_breaker.dart';
 export 'http_network_client.dart';
 export 'network_client.dart';
+export 'resilient_network_client.dart';
 export 'retry_handler.dart';
