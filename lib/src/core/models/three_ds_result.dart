@@ -48,6 +48,26 @@ class ThreeDSInitResult {
     this.errorMessage,
   });
 
+  /// Creates a [ThreeDSInitResult] from a JSON map.
+  factory ThreeDSInitResult.fromJson(Map<String, dynamic> json) {
+    final statusStr = json['status'] as String?;
+    final status = statusStr != null
+        ? ThreeDSStatus.values.firstWhere(
+            (s) => s.name == statusStr,
+            orElse: () => ThreeDSStatus.pending,
+          )
+        : ThreeDSStatus.pending;
+
+    return ThreeDSInitResult(
+      status: status,
+      htmlContent: json['htmlContent'] as String?,
+      redirectUrl: json['redirectUrl'] as String?,
+      transactionId: json['transactionId'] as String?,
+      errorCode: json['errorCode'] as String?,
+      errorMessage: json['errorMessage'] as String?,
+    );
+  }
+
   /// Creates a pending result that requires 3DS verification.
   factory ThreeDSInitResult.pending({
     String? htmlContent,
@@ -75,6 +95,16 @@ class ThreeDSInitResult {
   /// Creates a result indicating 3DS is not required.
   factory ThreeDSInitResult.notRequired() =>
       const ThreeDSInitResult(status: ThreeDSStatus.notRequired);
+
+  /// Converts this instance to a JSON-compatible map.
+  Map<String, dynamic> toJson() => {
+        'status': status.name,
+        if (htmlContent != null) 'htmlContent': htmlContent,
+        if (redirectUrl != null) 'redirectUrl': redirectUrl,
+        if (transactionId != null) 'transactionId': transactionId,
+        if (errorCode != null) 'errorCode': errorCode,
+        if (errorMessage != null) 'errorMessage': errorMessage,
+      };
 
   /// Current status of the 3DS flow.
   final ThreeDSStatus status;

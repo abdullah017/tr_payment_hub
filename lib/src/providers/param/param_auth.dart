@@ -2,10 +2,40 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
-/// Param POS Authentication
+/// Handles Param POS authentication using GUID-based hashing.
 ///
-/// Param, GUID bazlı authentication kullanır.
-/// Her işlem için hash hesaplanır.
+/// Param uses a GUID-based authentication system where each operation
+/// requires a hash computed from the GUID and operation-specific parameters.
+/// The API uses SOAP/XML format with SHA1 hashing.
+///
+/// ## Token Generation
+///
+/// Hashes are generated using:
+/// 1. Concatenate: `GUID + ClientCode + [operation-specific params]`
+/// 2. Compute SHA1 hash (uppercase)
+///
+/// ## Available Hash Types
+///
+/// * [generatePaymentHash] - Payment transaction hash
+/// * [generateRefundHash] - Refund transaction hash
+/// * [generateQueryHash] - Status query hash
+///
+/// ## Example
+///
+/// ```dart
+/// final auth = ParamAuth(
+///   clientCode: 'your_client_code',
+///   clientUsername: 'your_username',
+///   clientPassword: 'your_password',
+///   guid: 'your_guid',
+/// );
+///
+/// // Generate payment hash
+/// final hash = auth.generatePaymentHash(
+///   amount: '10000', // 100.00 TL in kuruş
+///   orderId: 'ORDER_123',
+/// );
+/// ```
 ///
 /// ## Security Notice
 ///
@@ -25,7 +55,17 @@ import 'package:crypto/crypto.dart';
 /// ### References:
 /// * [SHAttered Attack](https://shattered.io/)
 /// * [NIST SHA1 Deprecation](https://csrc.nist.gov/projects/hash-functions)
+///
+/// ## Param API Reference
+///
+/// See [Param documentation](https://dev.param.com.tr/) for API details.
 class ParamAuth {
+  /// Creates a new [ParamAuth] instance.
+  ///
+  /// [clientCode] - The client code from Param dashboard
+  /// [clientUsername] - The client username for API access
+  /// [clientPassword] - The client password for API access
+  /// [guid] - The GUID for hash generation
   ParamAuth({
     required this.clientCode,
     required this.clientUsername,
@@ -33,9 +73,16 @@ class ParamAuth {
     required this.guid,
   });
 
+  /// The client code assigned by Param.
   final String clientCode;
+
+  /// The client username for authentication.
   final String clientUsername;
+
+  /// The client password for authentication.
   final String clientPassword;
+
+  /// The GUID used for hash generation.
   final String guid;
 
   /// Ödeme işlemi için hash oluştur

@@ -150,6 +150,63 @@ class PaymentRequest {
     this.metadata,
   });
 
+  /// Creates a [PaymentRequest] from a JSON map.
+  ///
+  /// Used for deserializing requests from backend or storage.
+  factory PaymentRequest.fromJson(Map<String, dynamic> json) => PaymentRequest(
+        orderId: json['orderId'] as String,
+        amount: (json['amount'] as num).toDouble(),
+        paidPrice: json['paidPrice'] != null
+            ? (json['paidPrice'] as num).toDouble()
+            : null,
+        currency: Currency.values.firstWhere(
+          (c) => c.name == json['currency'],
+          orElse: () => Currency.tryLira,
+        ),
+        installment: json['installment'] as int? ?? 1,
+        card: CardInfo.fromJson(json['card'] as Map<String, dynamic>),
+        buyer: BuyerInfo.fromJson(json['buyer'] as Map<String, dynamic>),
+        basketItems: (json['basketItems'] as List<dynamic>)
+            .map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        shippingAddress: json['shippingAddress'] != null
+            ? AddressInfo.fromJson(
+                json['shippingAddress'] as Map<String, dynamic>,
+              )
+            : null,
+        billingAddress: json['billingAddress'] != null
+            ? AddressInfo.fromJson(
+                json['billingAddress'] as Map<String, dynamic>,
+              )
+            : null,
+        callbackUrl: json['callbackUrl'] as String?,
+        use3DS: json['use3DS'] as bool? ?? false,
+        metadata: json['metadata'] as Map<String, dynamic>?,
+      );
+
+  /// Converts this instance to a JSON-compatible map.
+  ///
+  /// Used for serializing requests to send to backend.
+  /// Note: Card data is included for API calls. For logging, use card.toSafeJson().
+  // ignore: deprecated_member_use_from_same_package
+  Map<String, dynamic> toJson() => {
+        'orderId': orderId,
+        'amount': amount,
+        if (paidPrice != null) 'paidPrice': paidPrice,
+        'currency': currency.name,
+        'installment': installment,
+        // ignore: deprecated_member_use_from_same_package
+        'card': card.toJson(),
+        'buyer': buyer.toJson(),
+        'basketItems': basketItems.map((e) => e.toJson()).toList(),
+        if (shippingAddress != null)
+          'shippingAddress': shippingAddress!.toJson(),
+        if (billingAddress != null) 'billingAddress': billingAddress!.toJson(),
+        if (callbackUrl != null) 'callbackUrl': callbackUrl,
+        'use3DS': use3DS,
+        if (metadata != null) 'metadata': metadata,
+      };
+
   /// Unique order identifier in your system.
   ///
   /// Must be unique for each payment attempt.

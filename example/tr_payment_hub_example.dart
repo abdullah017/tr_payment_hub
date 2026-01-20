@@ -1,7 +1,25 @@
+// Full SDK import (includes all features)
+// For client-only usage, use: import 'package:tr_payment_hub/tr_payment_hub_client.dart';
 import 'package:tr_payment_hub/tr_payment_hub.dart';
 
 void main() async {
-  print('=== TR Payment Hub Example ===\n');
+  print('=== TR Payment Hub v3.0 Example ===\n');
+
+  // ========================================
+  // USAGE MODES / KULLANIM MODLARI
+  // ========================================
+  //
+  // 1. DIRECT MODE (Dart Backend için):
+  //    import 'package:tr_payment_hub/tr_payment_hub.dart';
+  //    final provider = TrPaymentHub.create(ProviderType.iyzico);
+  //    await provider.initialize(IyzicoConfig(...));
+  //
+  // 2. PROXY MODE (Flutter + Custom Backend için):
+  //    import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+  //    final provider = TrPaymentHub.createProxy(baseUrl: '...');
+  //    await provider.initializeWithProvider(ProviderType.iyzico);
+  //
+  // ========================================
 
   // ----------------------------------------
   // 1. Mock Provider ile Test
@@ -125,9 +143,9 @@ void main() async {
   print('');
 
   // ----------------------------------------
-  // 7. Kart Doğrulama Örneği
+  // 7. Kart Doğrulama Örneği (CardInfo)
   // ----------------------------------------
-  print('7. Card Validation Example');
+  print('7. Card Validation Example (CardInfo)');
   print('-' * 40);
 
   final card = CardInfo(
@@ -142,6 +160,109 @@ void main() async {
   print('BIN: ${card.binNumber}');
   print('Last 4: ${card.lastFourDigits}');
   print('Valid (Luhn): ${card.isValidNumber}');
+  print('');
+
+  // ----------------------------------------
+  // 8. Client-Side CardValidator (v3.0+)
+  // ----------------------------------------
+  print('8. Client-Side CardValidator (v3.0+)');
+  print('-' * 40);
+
+  // Kart doğrulama - backend'e göndermeden önce
+  final cardValidation = CardValidator.validate(
+    cardNumber: '5528790000000008',
+    expireMonth: '12',
+    expireYear: '2030',
+    cvv: '123',
+    holderName: 'Ahmet Yilmaz',
+  );
+
+  print('Valid: ${cardValidation.isValid}');
+  print('Card Brand: ${cardValidation.cardBrand.displayName}');
+  if (!cardValidation.isValid) {
+    print('Errors: ${cardValidation.errors}');
+  }
+
+  // Kart numarası formatlama ve maskeleme
+  print('Formatted: ${CardValidator.formatCardNumber("5528790000000008")}');
+  print('Masked: ${CardValidator.maskCardNumber("5528790000000008")}');
+  print('BIN: ${CardValidator.extractBin("5528790000000008")}');
+
+  // Kart markası tespiti
+  print(
+      'Visa: ${CardValidator.detectCardBrand("4111111111111111").displayName}');
+  print(
+      'Amex: ${CardValidator.detectCardBrand("374245455400126").displayName}');
+  print(
+      'Troy: ${CardValidator.detectCardBrand("9792000000000001").displayName}');
+  print('');
+
+  // ----------------------------------------
+  // 9. Client-Side RequestValidator (v3.0+)
+  // ----------------------------------------
+  print('9. Client-Side RequestValidator (v3.0+)');
+  print('-' * 40);
+
+  final request = _createTestRequest();
+  final requestValidation = RequestValidator.validate(request);
+
+  print('Request Valid: ${requestValidation.isValid}');
+  print('Error Count: ${requestValidation.errorCount}');
+  if (!requestValidation.isValid) {
+    for (final error in requestValidation.allErrors) {
+      print('  - $error');
+    }
+  }
+  print('');
+
+  // ----------------------------------------
+  // 10. Proxy Mode Örneği (v3.0+)
+  // ----------------------------------------
+  print('10. Proxy Mode Example (v3.0+)');
+  print('-' * 40);
+
+  // NOT: Bu örnek çalışması için backend gerektirir
+  // Backend örnekleri: backend-examples/nodejs-express/ veya backend-examples/python-fastapi/
+
+  print('Proxy Mode için:');
+  print('  1. Backend\'inizi kurun (Node.js/Python/Go/PHP)');
+  print('  2. API anahtarlarını backend\'de saklayın');
+  print('  3. Flutter\'da createProxy kullanın:');
+  print('');
+  print('  final provider = TrPaymentHub.createProxy(');
+  print('    baseUrl: "https://api.yourbackend.com/payment",');
+  print('    provider: ProviderType.iyzico,');
+  print('    authToken: "user_jwt_token",');
+  print('  );');
+  print('');
+
+  // Proxy config örneği
+  const proxyConfig = ProxyConfig(
+    baseUrl: 'https://api.example.com/payment',
+    authToken: 'example_token',
+    timeout: Duration(seconds: 30),
+    maxRetries: 3,
+  );
+
+  print('Proxy Config:');
+  print('  Base URL: ${proxyConfig.baseUrl}');
+  print('  Timeout: ${proxyConfig.timeout.inSeconds}s');
+  print('  Max Retries: ${proxyConfig.maxRetries}');
+  print('  Valid: ${proxyConfig.validate()}');
+  print('');
+
+  // ----------------------------------------
+  // 11. JSON Serialization (v3.0+)
+  // ----------------------------------------
+  print('11. JSON Serialization (v3.0+)');
+  print('-' * 40);
+
+  // PaymentRequest toJson/fromJson
+  final requestJson = request.toJson();
+  print('PaymentRequest toJson: orderId=${requestJson['orderId']}');
+
+  final restoredRequest = PaymentRequest.fromJson(requestJson);
+  print('PaymentRequest fromJson: orderId=${restoredRequest.orderId}');
   print('');
 
   // Cleanup

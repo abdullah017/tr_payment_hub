@@ -1,10 +1,120 @@
-# Migration Guide: v1.x to v2.0.0
+# Migration Guide
 
 [Türkçe](#türkçe) | [English](#english)
 
 ---
 
 ## English
+
+### v2.x to v3.0.0 Migration
+
+**Good news: No breaking changes!** All existing v2.x code continues to work without modification.
+
+v3.0.0 introduces **Proxy Mode** for Flutter + Custom Backend architecture. This is an additive feature - existing Direct Mode usage remains unchanged.
+
+#### What's New in v3.0.0
+
+##### 1. Proxy Mode (Optional)
+
+If you want to use Proxy Mode (recommended for Flutter apps):
+
+```dart
+// OLD: Direct Mode (still works)
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+final provider = TrPaymentHub.create(ProviderType.iyzico);
+await provider.initialize(IyzicoConfig(
+  apiKey: 'xxx',      // Credentials in Flutter app
+  secretKey: 'xxx',
+  merchantId: 'xxx',
+));
+
+// NEW: Proxy Mode (v3.0+)
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+final provider = TrPaymentHub.createProxy(
+  baseUrl: 'https://api.yourbackend.com/payment',
+  provider: ProviderType.iyzico,
+  authToken: 'user_jwt_token',  // Optional
+);
+await provider.initializeWithProvider(ProviderType.iyzico);
+```
+
+**Benefits of Proxy Mode:**
+- API credentials stay on your secure backend
+- Backend can be any language (Node.js, Python, Go, PHP, etc.)
+- Unified Flutter code regardless of provider
+
+##### 2. Client-Side Validation (Optional)
+
+New validators for card and request validation:
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+// Card validation
+final cardResult = CardValidator.validate(
+  cardNumber: '5528790000000008',
+  expireMonth: '12',
+  expireYear: '2030',
+  cvv: '123',
+  holderName: 'Ahmet Yilmaz',
+);
+
+if (!cardResult.isValid) {
+  print(cardResult.errors); // {'cardNumber': 'Invalid card number'}
+}
+print('Card brand: ${cardResult.cardBrand.displayName}'); // Mastercard
+
+// Request validation
+final reqResult = RequestValidator.validate(paymentRequest);
+if (!reqResult.isValid) {
+  print(reqResult.errors);
+}
+```
+
+##### 3. New Export File
+
+For client-only usage (no provider credentials needed):
+
+```dart
+// Full SDK (Direct Mode)
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+// Client-only SDK (Proxy Mode)
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+```
+
+##### 4. JSON Serialization
+
+All models now have `toJson()` and `fromJson()`:
+
+```dart
+// NEW in v3.0
+final json = paymentRequest.toJson();
+final request = PaymentRequest.fromJson(json);
+
+final json = paymentResult.toJson();
+final result = PaymentResult.fromJson(json);
+```
+
+#### Migration Steps
+
+1. **Update pubspec.yaml:**
+   ```yaml
+   dependencies:
+     tr_payment_hub: ^3.0.0
+   ```
+
+2. **Run `dart pub get`**
+
+3. **No code changes required!** All existing code works as-is.
+
+4. **Optional:** Adopt Proxy Mode for better security in Flutter apps.
+
+---
+
+### v1.x to v2.0.0 Migration
 
 This guide explains the changes required when upgrading `tr_payment_hub` from v1.x to v2.0.0.
 
@@ -224,6 +334,116 @@ if (card.isExpired) {
 ---
 
 ## Türkçe
+
+### v2.x'ten v3.0.0'a Geçiş
+
+**İyi haber: Breaking change yok!** Mevcut v2.x kodunuz hiçbir değişiklik yapmadan çalışmaya devam eder.
+
+v3.0.0, Flutter + Custom Backend mimarisi için **Proxy Mode** özelliğini tanıtır. Bu ek bir özelliktir - mevcut Direct Mode kullanımı aynı şekilde çalışmaya devam eder.
+
+#### v3.0.0'daki Yenilikler
+
+##### 1. Proxy Mode (Opsiyonel)
+
+Proxy Mode kullanmak istiyorsanız (Flutter uygulamaları için önerilir):
+
+```dart
+// ESKİ: Direct Mode (hala çalışır)
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+final provider = TrPaymentHub.create(ProviderType.iyzico);
+await provider.initialize(IyzicoConfig(
+  apiKey: 'xxx',      // Credentials Flutter app'te
+  secretKey: 'xxx',
+  merchantId: 'xxx',
+));
+
+// YENİ: Proxy Mode (v3.0+)
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+final provider = TrPaymentHub.createProxy(
+  baseUrl: 'https://api.yourbackend.com/payment',
+  provider: ProviderType.iyzico,
+  authToken: 'user_jwt_token',  // Opsiyonel
+);
+await provider.initializeWithProvider(ProviderType.iyzico);
+```
+
+**Proxy Mode'un Avantajları:**
+- API credential'ları güvenli backend'inizde kalır
+- Backend herhangi bir dilde olabilir (Node.js, Python, Go, PHP, vb.)
+- Provider'dan bağımsız birleşik Flutter kodu
+
+##### 2. Client-Side Validation (Opsiyonel)
+
+Kart ve istek doğrulaması için yeni validator'lar:
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+// Kart doğrulama
+final cardResult = CardValidator.validate(
+  cardNumber: '5528790000000008',
+  expireMonth: '12',
+  expireYear: '2030',
+  cvv: '123',
+  holderName: 'Ahmet Yilmaz',
+);
+
+if (!cardResult.isValid) {
+  print(cardResult.errors); // {'cardNumber': 'Geçersiz kart numarası'}
+}
+print('Kart markası: ${cardResult.cardBrand.displayName}'); // Mastercard
+
+// İstek doğrulama
+final reqResult = RequestValidator.validate(paymentRequest);
+if (!reqResult.isValid) {
+  print(reqResult.errors);
+}
+```
+
+##### 3. Yeni Export Dosyası
+
+Client-only kullanım için (provider credential'ları gerekmez):
+
+```dart
+// Tam SDK (Direct Mode)
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+// Client-only SDK (Proxy Mode)
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+```
+
+##### 4. JSON Serileştirme
+
+Tüm modellerde artık `toJson()` ve `fromJson()` var:
+
+```dart
+// v3.0'da YENİ
+final json = paymentRequest.toJson();
+final request = PaymentRequest.fromJson(json);
+
+final json = paymentResult.toJson();
+final result = PaymentResult.fromJson(json);
+```
+
+#### Geçiş Adımları
+
+1. **pubspec.yaml güncelle:**
+   ```yaml
+   dependencies:
+     tr_payment_hub: ^3.0.0
+   ```
+
+2. **`dart pub get` çalıştır**
+
+3. **Kod değişikliği gerekli değil!** Mevcut kod olduğu gibi çalışır.
+
+4. **Opsiyonel:** Flutter uygulamalarında daha iyi güvenlik için Proxy Mode'u benimseyin.
+
+---
+
+### v1.x'ten v2.0.0'a Geçiş
 
 Bu rehber, `tr_payment_hub` paketini v1.x'ten v2.0.0'a yükseltirken yapılması gereken değişiklikleri açıklar.
 

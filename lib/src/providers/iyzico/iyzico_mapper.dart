@@ -12,8 +12,46 @@ import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
 import 'iyzico_error_mapper.dart';
 
-/// iyzico request/response dönüştürücü
+/// Converts between TR Payment Hub models and iyzico API formats.
+///
+/// This class provides static methods to transform payment requests
+/// into iyzico's expected JSON format and parse iyzico responses
+/// back into TR Payment Hub's unified models.
+///
+/// ## Request Mapping
+///
+/// * [toPaymentRequest] - Non-3DS payment request
+/// * [to3DSInitRequest] - 3D Secure initialization request
+/// * [toInstallmentRequest] - Installment query request
+/// * [toRefundRequest] - Refund request
+/// * [toSavedCardPaymentRequest] - Saved card payment request
+///
+/// ## Response Mapping
+///
+/// * [fromPaymentResponse] - Payment result
+/// * [from3DSInitResponse] - 3DS initialization result
+/// * [fromInstallmentResponse] - Installment options
+/// * [fromRefundResponse] - Refund result
+/// * [fromSavedCardResponse] - Saved card info
+///
+/// ## Example
+///
+/// ```dart
+/// // Convert payment request to iyzico format
+/// final iyzicoRequest = IyzicoMapper.toPaymentRequest(
+///   paymentRequest,
+///   'conversation_123',
+/// );
+///
+/// // Parse iyzico response
+/// final result = IyzicoMapper.fromPaymentResponse(response);
+/// ```
+///
+/// ## iyzico API Reference
+///
+/// See [iyzico documentation](https://docs.iyzico.com/) for API details.
 class IyzicoMapper {
+  /// Private constructor - this class only has static methods.
   IyzicoMapper._();
 
   // ============================================

@@ -123,6 +123,11 @@
 /// * Never log raw card numbers or CVV values
 library;
 
+// Client (Proxy Mode)
+export 'src/client/proxy_config.dart';
+export 'src/client/proxy_payment_provider.dart';
+export 'src/client/validators/card_validator.dart';
+export 'src/client/validators/request_validator.dart';
 // Core
 export 'src/core/config.dart';
 export 'src/core/enums.dart';
@@ -130,6 +135,7 @@ export 'src/core/exceptions/payment_exception.dart';
 export 'src/core/exceptions/validation_exception.dart';
 // Logging
 export 'src/core/logging/payment_logger.dart';
+export 'src/core/logging/request_logger.dart';
 export 'src/core/models/basket_item.dart';
 export 'src/core/models/buyer_info.dart';
 export 'src/core/models/card_info.dart';
@@ -139,8 +145,13 @@ export 'src/core/models/payment_result.dart';
 export 'src/core/models/refund_request.dart';
 export 'src/core/models/saved_card.dart';
 export 'src/core/models/three_ds_result.dart';
+// Metrics
+export 'src/core/metrics/payment_metrics.dart';
 // Network utilities
 export 'src/core/network/circuit_breaker.dart';
+export 'src/core/network/http_network_client.dart';
+export 'src/core/network/network_client.dart';
+export 'src/core/network/resilient_network_client.dart';
 export 'src/core/network/retry_handler.dart';
 export 'src/core/payment_provider.dart';
 // Providers
@@ -159,3 +170,5 @@ export 'src/tr_payment_hub_base.dart';
 export 'src/core/utils/payment_utils.dart';
 export 'src/utils/hash_utils.dart';
 export 'src/utils/log_sanitizer.dart';
+// Widgets
+export 'src/widgets/widgets.dart';

@@ -7,6 +7,248 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-01-17
+
+### Added
+
+#### Example App - Complete Rewrite
+- **Multi-Screen Architecture** - Feature-based folder structure
+  - `HomeScreen` - Dashboard with provider status and quick actions
+  - `PaymentScreen` - Full payment form with 3DS support
+  - `InstallmentsScreen` - BIN-based installment query
+  - `SavedCardsScreen` - List, charge, and delete saved cards
+  - `RefundScreen` - Full and partial refund processing
+  - `TransactionStatusScreen` - Payment status lookup
+  - `LogsScreen` - Real-time HTTP request/response viewer
+  - `SettingsScreen` - Provider selection and app configuration
+- **State Management** - Provider pattern with `AppState`
+- **Two Connection Modes**
+  - **Direct Mode** - API keys stored in app (development)
+  - **Proxy Mode** - API keys on backend server (production)
+- **Material Design 3** - Modern theming with light/dark mode support
+- **Persistent Storage** - SharedPreferences for settings and history
+
+#### Backend Example (Node.js)
+- **Express.js Server** - Complete proxy backend implementation
+  - All payment endpoints (create, 3DS, refund, status)
+  - Saved cards endpoints (list, charge, delete)
+  - Installment queries
+- **Multi-Provider Support** - iyzico, PayTR, Sipay, Param
+- **Environment Configuration** - `.env.example` template
+- **Security** - API keys never exposed to Flutter app
+
+#### Request Logging
+- **RequestLogger** - HTTP request/response logging infrastructure
+  - `RequestLogEntry` - Log entry model with timing info
+  - `RequestLoggerConfig` - Configurable log levels
+  - Automatic sensitive data masking via LogSanitizer
+  - Callback support for custom log handling
+
+#### Metrics Collection
+- **PaymentMetrics** - Operation metrics tracking
+  - `PaymentMetricEvent` - Metric event model
+  - `MetricsCollector` - Abstract interface
+  - `InMemoryMetricsCollector` - Default implementation
+  - Provider-level and operation-level metrics
+  - Success/failure counters and timing stats
+
+#### Provider Improvements
+- **Provider Mixins** - Reusable functionality
+  - `InitializedProviderMixin` - Initialization state management
+  - `LoggingProviderMixin` - Integrated logging support
+  - `MetricsProviderMixin` - Metrics collection support
+- **ResilientNetworkClient** - Fault-tolerant HTTP client
+  - Built-in RetryHandler integration
+  - CircuitBreaker integration
+  - Automatic fallback and recovery
+
+#### Security Enhancements
+- **SecurityUtils** - Security utility functions
+  - `constantTimeEquals()` - Timing-safe string comparison
+  - `secureHash()` - Secure hash generation
+  - `maskSensitiveData()` - Data masking utilities
+- **JsonUtils** - Safe JSON parsing
+  - `safeParse()` - Null-safe JSON parsing
+  - `safeGetString()`, `safeGetInt()`, etc.
+
+#### Testing
+- **Widget Tests** - PaymentWebView widget tests
+  - `payment_webview_test.dart` - Core widget tests
+  - `payment_webview_theme_test.dart` - Theme tests
+  - `payment_webview_result_test.dart` - Result model tests
+- **Unit Tests** - New test files
+  - `request_logger_test.dart` - Logger tests
+  - `payment_metrics_test.dart` - Metrics tests
+  - `resilient_network_client_test.dart` - Network client tests
+
+#### CI/CD
+- **GitHub Actions Workflows**
+  - `ci.yml` - Continuous integration (lint, analyze, test)
+  - `test.yml` - Extended test matrix (SDK versions)
+
+### Changed
+- **All Providers** - Updated to support optional `metricsCollector` parameter
+- **HttpNetworkClient** - Now supports optional `requestLogger` parameter
+- **Example pubspec.yaml** - Added provider and shared_preferences dependencies
+- **LogSanitizer** - Enhanced patterns for better data masking
+
+### Documentation
+- **example/README.md** - Comprehensive usage guide
+  - Direct Mode vs Proxy Mode explanation
+  - Backend setup instructions
+  - Test cards and troubleshooting
+- **example/backend/README.md** - Backend API documentation
+
+### Example App Features Summary
+| Feature | Description |
+|---------|-------------|
+| Provider Selection | Mock, iyzico, PayTR, Sipay, Param |
+| Connection Mode | Direct API or Proxy (Backend) |
+| Payment Form | Card validation, 3DS toggle |
+| 3D Secure | Built-in PaymentWebView |
+| Installments | BIN-based query with selection |
+| Saved Cards | List, charge, delete (iyzico/Sipay) |
+| Refunds | Full or partial amount |
+| Status Check | Transaction status lookup |
+| Request Logs | HTTP request/response viewer |
+| Settings | Theme, sandbox mode, logging |
+
+## [3.1.0] - 2026-01-09
+
+### Added
+- **PaymentWebView Widget** - Built-in 3D Secure WebView for Flutter apps
+  - `PaymentWebView` - Main widget supporting both HTML content (iyzico) and redirect URLs (PayTR)
+  - `PaymentWebView.show()` - Full-screen modal display with cancel confirmation
+  - `PaymentWebView.showBottomSheet()` - Bottom sheet display option
+  - `PaymentWebViewTheme` - Customizable theme configuration (colors, loading text, app bar, etc.)
+  - `PaymentWebViewResult` - Result model with status (success, cancelled, timeout, error)
+  - Automatic callback URL detection and parameter extraction
+  - Configurable timeout (default: 5 minutes)
+  - Loading overlay and error states with retry support
+  - Turkish localization for UI text
+
+- **NetworkClient Interface** - HTTP client abstraction for custom implementations
+  - `NetworkClient` abstract class - Allows using http, Dio, or custom HTTP clients
+  - `NetworkResponse` - Unified response wrapper (statusCode, body, headers, isSuccess)
+  - `NetworkException` - Network-specific exception type
+  - `HttpNetworkClient` - Default implementation using http package
+  - All providers now accept optional `NetworkClient` parameter
+  - Backward compatible with existing `http.Client` parameter
+
+- **Backend Validation** - Joi validation added to Node.js example
+  - Comprehensive validation schemas for all endpoints
+  - Card validation (Luhn algorithm, expiry, CVV format)
+  - Buyer validation (email, phone, IP address)
+  - Basket item validation
+  - Custom error messages in Turkish
+  - Validation middleware factory function
+
+### Changed
+- **All providers migrated to NetworkClient interface**
+  - `IyzicoProvider` - Now uses NetworkClient internally
+  - `PayTRProvider` - Now uses NetworkClient internally
+  - `ParamProvider` - Now uses NetworkClient internally
+  - `SipayProvider` - Now uses NetworkClient internally
+  - `ProxyPaymentProvider` - Now uses NetworkClient internally
+- **pubspec.yaml updated**
+  - Added Flutter SDK dependency (required for widgets)
+  - Added `webview_flutter: ^4.4.0` dependency
+  - Version bumped to 3.1.0
+- **Exports updated**
+  - `tr_payment_hub.dart` now exports widgets and NetworkClient
+  - `tr_payment_hub_client.dart` now exports widgets and NetworkClient
+
+### Custom HTTP Client Usage
+
+```dart
+// Using Dio (implement your own DioNetworkClient)
+class DioNetworkClient implements NetworkClient {
+  final Dio _dio;
+  DioNetworkClient({Dio? dio}) : _dio = dio ?? Dio();
+
+  @override
+  Future<NetworkResponse> post(String url, {...}) async {
+    final response = await _dio.post(url, data: body);
+    return NetworkResponse(
+      statusCode: response.statusCode ?? 500,
+      body: response.data.toString(),
+      headers: response.headers.map.map((k, v) => MapEntry(k, v.join(','))),
+    );
+  }
+  // ... implement other methods
+}
+
+// Use with any provider
+final provider = IyzicoProvider(networkClient: DioNetworkClient());
+await provider.initialize(config);
+```
+
+### No Breaking Changes
+- All existing v3.0.0 code continues to work unchanged
+- `http.Client` parameter still supported for backward compatibility
+- Providers create default `HttpNetworkClient` if no custom client provided
+
+## [3.0.0] - 2026-01-08
+
+### Added
+- **Proxy Mode** - New architecture for Flutter + Custom Backend integration
+  - `ProxyPaymentProvider` - HTTP client that forwards requests to your backend
+  - `ProxyConfig` - Configuration class for proxy settings (baseUrl, authToken, headers, timeout, retries)
+  - `TrPaymentHub.createProxy()` - Factory method for creating proxy providers
+  - API credentials stay secure on your backend (Node.js, Python, Go, PHP, etc.)
+  - Built-in retry logic with exponential backoff
+  - Configurable timeout and max retries
+
+- **Client-Side Validation** - Validate payment data before sending to backend
+  - `CardValidator` - Independent card validation utilities
+    - `isValidCardNumber()` - Luhn algorithm validation
+    - `isValidExpiry()` - Expiry date validation
+    - `isValidCVV()` - CVV format validation (3 or 4 digits for Amex)
+    - `isValidHolderName()` - Cardholder name validation
+    - `detectCardBrand()` - Detect Visa, Mastercard, Amex, Troy
+    - `formatCardNumber()` - Add spaces for display
+    - `maskCardNumber()` - Show BIN + last 4 digits
+    - `extractBin()` - Extract BIN from card number
+    - `validate()` - Full validation returning `CardValidationResult`
+  - `RequestValidator` - Payment request validation
+    - `validate()` - Full request validation returning `RequestValidationResult`
+    - `validateBuyer()` - Buyer info validation (email, phone, IP)
+  - `CardBrand` enum - visa, mastercard, amex, troy, unknown
+  - `CardValidationResult` - Validation result with errors and card brand
+  - `RequestValidationResult` - Validation result with field-specific errors
+
+- **Client-Only Export** - `tr_payment_hub_client.dart`
+  - Exports only client-safe components (no provider credentials)
+  - Includes: models, enums, validators, proxy provider, testing utilities
+  - Ideal for Flutter apps that use Proxy Mode
+
+- **JSON Serialization** - Added toJson/fromJson to remaining models
+  - `PaymentRequest.toJson()` / `PaymentRequest.fromJson()`
+  - `PaymentResult.toJson()` / `PaymentResult.fromJson()`
+  - `RefundResult.toJson()` / `RefundResult.fromJson()`
+  - `ThreeDSInitResult.toJson()` / `ThreeDSInitResult.fromJson()`
+  - `PaymentException.toJson()` / `PaymentException.fromJson()`
+
+- **Backend Examples** - Reference implementations
+  - Node.js Express example (`backend-examples/nodejs-express/`)
+  - Python FastAPI example (`backend-examples/python-fastapi/`)
+
+### Changed
+- Version bumped to 3.0.0 (major version for new feature set)
+- README updated with Usage Modes section (Proxy vs Direct)
+- Main export file now includes client module exports
+
+### Documentation
+- Added comprehensive Proxy Mode documentation in README
+- Added Client-Side Validation examples
+- Created MIGRATION.md for v2.x → v3.0 upgrade guide
+- Backend API contract documentation
+
+### No Breaking Changes
+- All existing v2.x code continues to work unchanged
+- Proxy Mode is additive - Direct Mode remains fully supported
+- Existing tests pass without modification
+
 ## [2.0.1] - 2026-01-08
 
 ### Added
@@ -212,7 +454,10 @@ currency: Currency.tryLira
   - Configurable success/failure scenarios
   - Custom delay support
 
-[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/abdullah017/tr_payment_hub/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/abdullah017/tr_payment_hub/compare/v3.1.0...v3.2.0
+[3.1.0]: https://github.com/abdullah017/tr_payment_hub/compare/v3.0.0...v3.1.0
+[3.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.1...v3.0.0
 [2.0.1]: https://github.com/abdullah017/tr_payment_hub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.4...v2.0.0
 [1.0.4]: https://github.com/abdullah017/tr_payment_hub/compare/v1.0.3...v1.0.4

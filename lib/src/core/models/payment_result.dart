@@ -49,6 +49,40 @@ class PaymentResult {
     this.rawResponse,
   });
 
+  /// Creates a [PaymentResult] from a JSON map.
+  factory PaymentResult.fromJson(Map<String, dynamic> json) => PaymentResult(
+        isSuccess:
+            json['success'] as bool? ?? json['isSuccess'] as bool? ?? false,
+        transactionId: json['transactionId'] as String?,
+        paymentId: json['paymentId'] as String?,
+        amount:
+            json['amount'] != null ? (json['amount'] as num).toDouble() : null,
+        paidAmount: json['paidAmount'] != null
+            ? (json['paidAmount'] as num).toDouble()
+            : null,
+        installment: json['installment'] as int?,
+        cardType: json['cardType'] != null
+            ? CardType.values.firstWhere(
+                (c) => c.name == json['cardType'],
+                orElse: () => CardType.creditCard,
+              )
+            : null,
+        cardAssociation: json['cardAssociation'] != null
+            ? CardAssociation.values.firstWhere(
+                (c) => c.name == json['cardAssociation'],
+                orElse: () => CardAssociation.visa,
+              )
+            : null,
+        cardFamily: json['cardFamily'] as String?,
+        binNumber: json['binNumber'] as String?,
+        lastFourDigits: json['lastFourDigits'] as String?,
+        cardToken: json['cardToken'] as String?,
+        cardUserKey: json['cardUserKey'] as String?,
+        errorCode: json['errorCode'] as String?,
+        errorMessage: json['errorMessage'] as String?,
+        rawResponse: json['rawResponse'] as Map<String, dynamic>?,
+      );
+
   /// Creates a successful payment result.
   factory PaymentResult.success({
     required String transactionId,
@@ -94,6 +128,25 @@ class PaymentResult {
         errorMessage: errorMessage,
         rawResponse: rawResponse,
       );
+
+  /// Converts this instance to a JSON-compatible map.
+  Map<String, dynamic> toJson() => {
+        'success': isSuccess,
+        if (transactionId != null) 'transactionId': transactionId,
+        if (paymentId != null) 'paymentId': paymentId,
+        if (amount != null) 'amount': amount,
+        if (paidAmount != null) 'paidAmount': paidAmount,
+        if (installment != null) 'installment': installment,
+        if (cardType != null) 'cardType': cardType!.name,
+        if (cardAssociation != null) 'cardAssociation': cardAssociation!.name,
+        if (cardFamily != null) 'cardFamily': cardFamily,
+        if (binNumber != null) 'binNumber': binNumber,
+        if (lastFourDigits != null) 'lastFourDigits': lastFourDigits,
+        if (cardToken != null) 'cardToken': cardToken,
+        if (cardUserKey != null) 'cardUserKey': cardUserKey,
+        if (errorCode != null) 'errorCode': errorCode,
+        if (errorMessage != null) 'errorMessage': errorMessage,
+      };
 
   /// Whether the payment was successful.
   final bool isSuccess;
@@ -183,6 +236,18 @@ class RefundResult {
     this.errorMessage,
   });
 
+  /// Creates a [RefundResult] from a JSON map.
+  factory RefundResult.fromJson(Map<String, dynamic> json) => RefundResult(
+        isSuccess:
+            json['success'] as bool? ?? json['isSuccess'] as bool? ?? false,
+        refundId: json['refundId'] as String?,
+        refundedAmount: json['refundedAmount'] != null
+            ? (json['refundedAmount'] as num).toDouble()
+            : null,
+        errorCode: json['errorCode'] as String?,
+        errorMessage: json['errorMessage'] as String?,
+      );
+
   /// Creates a successful refund result.
   factory RefundResult.success({
     required String refundId,
@@ -204,6 +269,15 @@ class RefundResult {
         errorCode: errorCode,
         errorMessage: errorMessage,
       );
+
+  /// Converts this instance to a JSON-compatible map.
+  Map<String, dynamic> toJson() => {
+        'success': isSuccess,
+        if (refundId != null) 'refundId': refundId,
+        if (refundedAmount != null) 'refundedAmount': refundedAmount,
+        if (errorCode != null) 'errorCode': errorCode,
+        if (errorMessage != null) 'errorMessage': errorMessage,
+      };
 
   /// Whether the refund was successful.
   final bool isSuccess;

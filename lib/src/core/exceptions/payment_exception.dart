@@ -33,6 +33,28 @@ class PaymentException implements Exception {
     this.provider,
   });
 
+  /// Creates a [PaymentException] from a JSON map.
+  factory PaymentException.fromJson(Map<String, dynamic> json) {
+    final providerStr = json['provider'] as String?;
+    final provider = providerStr != null
+        ? ProviderType.values.firstWhere(
+            (p) => p.name == providerStr,
+            orElse: () => ProviderType.iyzico,
+          )
+        : null;
+
+    return PaymentException(
+      code:
+          json['errorCode'] as String? ?? json['code'] as String? ?? 'unknown',
+      message: json['errorMessage'] as String? ??
+          json['message'] as String? ??
+          'Unknown error',
+      providerCode: json['providerCode'] as String?,
+      providerMessage: json['providerMessage'] as String?,
+      provider: provider,
+    );
+  }
+
   /// Creates a PaymentException with sanitized provider message.
   ///
   /// Use this factory when the provider message may contain sensitive
@@ -175,6 +197,19 @@ class PaymentException implements Exception {
         providerMessage: providerMessage,
         provider: provider,
       );
+
+  /// Converts this exception to a JSON-compatible map.
+  ///
+  /// Useful for serializing errors to send over network or for logging.
+  Map<String, dynamic> toJson() => {
+        'errorCode': code,
+        'errorMessage': message,
+        if (providerCode != null) 'providerCode': providerCode,
+        if (providerMessage != null) 'providerMessage': providerMessage,
+        if (provider != null) 'provider': provider!.name,
+        'success': false,
+      };
+
   final String code;
   final String message;
   final String? providerCode;

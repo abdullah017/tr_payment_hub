@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import '../../core/enums.dart';
 import '../../core/exceptions/payment_exception.dart';
+import '../../core/metrics/payment_metrics.dart';
 import '../../core/models/buyer_info.dart';
 import '../../core/models/installment_info.dart';
 import '../../core/models/payment_request.dart';
@@ -10,6 +11,10 @@ import '../../core/models/payment_result.dart';
 import '../../core/models/refund_request.dart';
 import '../../core/models/saved_card.dart';
 import '../../core/models/three_ds_result.dart';
+import '../../core/network/circuit_breaker.dart';
+import '../../core/network/http_network_client.dart';
+import '../../core/network/network_client.dart';
+import '../../core/network/resilient_network_client.dart';
 import '../../core/payment_provider.dart';
 import '../../core/utils/payment_utils.dart';
 import 'param_auth.dart';
@@ -36,19 +41,59 @@ import 'param_mapper.dart';
 /// final result = await provider.createPayment(request);
 /// ```
 ///
-/// Test için özel http.Client kullanabilirsiniz:
+/// ## Usage with Custom NetworkClient (e.g., Dio)
+///
+/// ```dart
+/// final dioClient = DioNetworkClient(); // Your custom implementation
+/// final provider = ParamProvider(networkClient: dioClient);
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Usage with Resilience (Retry + Circuit Breaker)
+///
+/// ```dart
+/// final provider = ParamProvider(
+///   resilienceConfig: ResilienceConfig.forPayments,
+///   onResilienceEvent: (event) => print('Resilience: $event'),
+/// );
+/// await provider.initialize(config);
+/// ```
+///
+/// ## Testing with Mock HTTP Client
+///
 /// ```dart
 /// final mockClient = PaymentMockClient.param(shouldSucceed: true);
 /// final provider = ParamProvider(httpClient: mockClient);
 /// ```
 class ParamProvider implements PaymentProvider {
-  /// Test için özel http.Client inject edilebilir
-  ParamProvider({http.Client? httpClient}) : _customHttpClient = httpClient;
+  /// Creates a [ParamProvider] with optional custom [NetworkClient].
+  ///
+  /// [networkClient] - Custom network client (Dio, etc.)
+  /// [httpClient] - Legacy: http.Client for backward compatibility
+  /// [resilienceConfig] - Optional resilience configuration for retry/circuit breaker
+  /// [onResilienceEvent] - Optional callback for resilience events
+  /// [metricsCollector] - Optional metrics collector for monitoring
+  ParamProvider({
+    NetworkClient? networkClient,
+    http.Client? httpClient,
+    ResilienceConfig? resilienceConfig,
+    ResilienceCallback? onResilienceEvent,
+    MetricsCollector? metricsCollector,
+  })  : _customNetworkClient = networkClient,
+        _customHttpClient = httpClient,
+        _resilienceConfig = resilienceConfig,
+        _onResilienceEvent = onResilienceEvent,
+        _metricsCollector = metricsCollector;
 
+  final NetworkClient? _customNetworkClient;
   final http.Client? _customHttpClient;
+  final ResilienceConfig? _resilienceConfig;
+  final ResilienceCallback? _onResilienceEvent;
+  final MetricsCollector? _metricsCollector;
   late ParamConfig _config;
   late ParamAuth _auth;
-  late http.Client _httpClient;
+  NetworkClient? _networkClient;
+  ResilientNetworkClient? _resilientClient;
   bool _initialized = false;
 
   @override
@@ -77,13 +122,38 @@ class ParamProvider implements PaymentProvider {
       clientPassword: config.secretKey,
       guid: config.guid,
     );
-    _httpClient = _customHttpClient ?? http.Client();
+
+    // Priority: custom NetworkClient > legacy http.Client > default
+    NetworkClient baseClient;
+    if (_customNetworkClient != null) {
+      baseClient = _customNetworkClient!;
+    } else if (_customHttpClient != null) {
+      baseClient = HttpNetworkClient(client: _customHttpClient);
+    } else {
+      baseClient = HttpNetworkClient();
+    }
+
+    // Wrap with resilience if configured
+    if (_resilienceConfig != null) {
+      _resilientClient = ResilientNetworkClient(
+        client: baseClient,
+        circuitName: 'param',
+        config: _resilienceConfig!,
+        onEvent: _onResilienceEvent,
+      );
+      _networkClient = _resilientClient;
+    } else {
+      _networkClient = baseClient;
+    }
+
     _initialized = true;
   }
 
   @override
   Future<PaymentResult> createPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.paymentAttempt);
+    final stopwatch = Stopwatch()..start();
 
     final orderId = _generateOrderId();
     final amount = _formatAmount(request.effectivePaidAmount);
@@ -106,17 +176,41 @@ class ParamProvider implements PaymentProvider {
       );
 
       final result = ParamMapper.fromPaymentResponse(response);
+      stopwatch.stop();
 
       if (!result.isSuccess) {
+        _recordMetric(
+          MetricNames.paymentFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
         throw ParamErrorMapper.mapError(
           errorCode: result.errorCode ?? 'unknown',
           errorMessage: result.errorMessage ?? 'Bilinmeyen hata',
         );
       }
 
+      _recordMetric(
+        MetricNames.paymentSuccess,
+        value: request.amount,
+        duration: stopwatch.elapsed,
+      );
       return result;
     } catch (e) {
-      if (e is PaymentException) rethrow;
+      stopwatch.stop();
+      if (e is PaymentException) {
+        _recordMetric(
+          MetricNames.paymentFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': e.code},
+        );
+        rethrow;
+      }
+      _recordMetric(
+        MetricNames.paymentFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.param,
@@ -127,8 +221,14 @@ class ParamProvider implements PaymentProvider {
   @override
   Future<ThreeDSInitResult> init3DSPayment(PaymentRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSInitAttempt);
+    final stopwatch = Stopwatch()..start();
 
     if (request.callbackUrl == null || request.callbackUrl!.isEmpty) {
+      _recordMetric(
+        MetricNames.threeDSInitFailed,
+        tags: {'error_code': 'missing_callback_url'},
+      );
       throw PaymentException.configError(
         message: 'callbackUrl is required for 3DS payment',
         provider: ProviderType.param,
@@ -161,14 +261,39 @@ class ParamProvider implements PaymentProvider {
         soapRequest,
       );
 
-      return ParamMapper.from3DSInitResponse(response);
+      final result = ParamMapper.from3DSInitResponse(response);
+      stopwatch.stop();
+      if (result.status == ThreeDSStatus.pending) {
+        _recordMetric(
+          MetricNames.threeDSInitSuccess,
+          duration: stopwatch.elapsed,
+        );
+      } else {
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
     } catch (e) {
+      stopwatch.stop();
       if (e is PaymentException) {
+        _recordMetric(
+          MetricNames.threeDSInitFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': e.code},
+        );
         return ThreeDSInitResult.failed(
           errorCode: e.code,
           errorMessage: e.message,
         );
       }
+      _recordMetric(
+        MetricNames.threeDSInitFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       return ThreeDSInitResult.failed(
         errorCode: 'network_error',
         errorMessage: e.toString(),
@@ -182,9 +307,14 @@ class ParamProvider implements PaymentProvider {
     Map<String, dynamic>? callbackData,
   }) async {
     _checkInitialized();
+    _recordMetric(MetricNames.threeDSCompleteAttempt);
 
     // Param 3DS callback'ten gelen verileri doğrula
     if (callbackData == null) {
+      _recordMetric(
+        MetricNames.threeDSCompleteFailed,
+        tags: {'error_code': 'missing_callback_data'},
+      );
       throw const PaymentException(
         code: 'missing_callback_data',
         message: 'Param requires callback data to complete 3DS payment',
@@ -197,12 +327,18 @@ class ParamProvider implements PaymentProvider {
     final message = callbackData['Sonuc_Str']?.toString() ?? '';
 
     if (ParamErrorMapper.isSuccess(status)) {
+      final amount = _parseAmount(callbackData['Tutar']?.toString());
+      _recordMetric(MetricNames.threeDSCompleteSuccess, value: amount);
       return PaymentResult.success(
         transactionId: callbackData['Dekont_ID']?.toString() ?? transactionId,
-        amount: _parseAmount(callbackData['Tutar']?.toString()),
+        amount: amount,
         rawResponse: callbackData,
       );
     } else {
+      _recordMetric(
+        MetricNames.threeDSCompleteFailed,
+        tags: {'error_code': status},
+      );
       return PaymentResult.failure(
         errorCode: status,
         errorMessage: message,
@@ -214,6 +350,8 @@ class ParamProvider implements PaymentProvider {
   @override
   Future<RefundResult> refund(RefundRequest request) async {
     _checkInitialized();
+    _recordMetric(MetricNames.refundAttempt);
+    final stopwatch = Stopwatch()..start();
 
     final hash = _auth.generateRefundHash(orderId: request.transactionId);
 
@@ -233,8 +371,29 @@ class ParamProvider implements PaymentProvider {
         soapRequest,
       );
 
-      return ParamMapper.fromRefundResponse(response);
+      final result = ParamMapper.fromRefundResponse(response);
+      stopwatch.stop();
+      if (result.isSuccess) {
+        _recordMetric(
+          MetricNames.refundSuccess,
+          value: request.amount,
+          duration: stopwatch.elapsed,
+        );
+      } else {
+        _recordMetric(
+          MetricNames.refundFailed,
+          duration: stopwatch.elapsed,
+          tags: {'error_code': result.errorCode ?? 'unknown'},
+        );
+      }
+      return result;
     } catch (e) {
+      stopwatch.stop();
+      _recordMetric(
+        MetricNames.refundFailed,
+        duration: stopwatch.elapsed,
+        tags: {'error_code': 'network_error'},
+      );
       if (e is PaymentException) rethrow;
       return RefundResult.failure(
         errorCode: 'network_error',
@@ -353,10 +512,31 @@ class ParamProvider implements PaymentProvider {
     );
   }
 
+  // ============================================
+  // RESILIENCE METHODS
+  // ============================================
+
+  /// Whether resilience (retry/circuit breaker) is enabled.
+  bool get isResilienceEnabled => _resilientClient != null;
+
+  /// Current circuit breaker state (null if resilience not enabled).
+  CircuitState? get circuitState => _resilientClient?.circuitState;
+
+  /// Whether the circuit is currently open (service unavailable).
+  bool get isCircuitOpen => _resilientClient?.isCircuitOpen ?? false;
+
+  /// Manually reset the circuit breaker to closed state.
+  void resetCircuit() => _resilientClient?.resetCircuit();
+
+  /// Force the circuit to open state.
+  void forceCircuitOpen() => _resilientClient?.forceCircuitOpen();
+
   @override
   void dispose() {
     if (_initialized) {
-      _httpClient.close();
+      _networkClient?.dispose();
+      _networkClient = null;
+      _resilientClient = null;
       _initialized = false;
     }
   }
@@ -374,11 +554,37 @@ class ParamProvider implements PaymentProvider {
     }
   }
 
+  /// Records a metric event if metrics collector is configured.
+  void _recordMetric(
+    String name, {
+    double? value,
+    Duration? duration,
+    Map<String, String> tags = const {},
+  }) {
+    if (_metricsCollector == null) return;
+    if (duration != null) {
+      _metricsCollector!.timing(
+        name,
+        provider: ProviderType.param,
+        duration: duration,
+        tags: tags,
+      );
+    } else {
+      _metricsCollector!.increment(
+        name,
+        provider: ProviderType.param,
+        value: value ?? 1,
+        tags: tags,
+      );
+    }
+  }
+
   /// Generates a unique order ID using PaymentUtils
   String _generateOrderId() => PaymentUtils.generateOrderId(prefix: 'PARAM');
 
   /// Formats amount to cents string using PaymentUtils
-  String _formatAmount(double amount) => PaymentUtils.amountToCentsString(amount);
+  String _formatAmount(double amount) =>
+      PaymentUtils.amountToCentsString(amount);
 
   /// Parses cents amount from API response
   double _parseAmount(String? value) {
@@ -396,21 +602,20 @@ class ParamProvider implements PaymentProvider {
       PaymentUtils.generateDefaultInstallmentInfo(binNumber, amount);
 
   Future<String> _postSoap(String soapAction, String body) async {
-    final url = Uri.parse('${_config.baseUrl}${ParamEndpoints.servicePath}');
+    final url = '${_config.baseUrl}${ParamEndpoints.servicePath}';
 
     try {
-      final response = await _httpClient
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'text/xml; charset=utf-8',
-              'SOAPAction': soapAction,
-            },
-            body: body,
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _networkClient!.post(
+        url,
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': soapAction,
+        },
+        body: body,
+        timeout: const Duration(seconds: 15),
+      );
 
-      if (response.statusCode == 200) {
+      if (response.isSuccess) {
         return response.body;
       } else {
         throw PaymentException.networkError(
@@ -420,10 +625,15 @@ class ParamProvider implements PaymentProvider {
       }
     } on PaymentException {
       rethrow;
-    } catch (e) {
-      if (e.toString().contains('TimeoutException')) {
+    } on NetworkException catch (e) {
+      if (e.message.contains('timeout') || e.message.contains('Timeout')) {
         throw PaymentException.timeout(provider: ProviderType.param);
       }
+      throw PaymentException.networkError(
+        providerMessage: e.message,
+        provider: ProviderType.param,
+      );
+    } catch (e) {
       throw PaymentException.networkError(
         providerMessage: e.toString(),
         provider: ProviderType.param,

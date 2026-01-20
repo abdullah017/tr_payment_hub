@@ -3,7 +3,6 @@
 [![Pub Version](https://img.shields.io/pub/v/tr_payment_hub)](https://pub.dev/packages/tr_payment_hub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)](https://dart.dev)
-[![CI](https://github.com/abdullah017/tr_payment_hub/actions/workflows/ci.yml/badge.svg)](https://github.com/abdullah017/tr_payment_hub/actions)
 
 **[Türkçe Dokümantasyon](README_TR.md)**
 
@@ -21,11 +20,91 @@ Unified Turkish payment gateway integration for Flutter/Dart applications.
 ## Features
 
 - **Unified API** - Single interface for all payment providers
+- **PaymentWebView** - Built-in 3DS WebView widget for Flutter apps (v3.1+)
+- **Proxy Mode** - Secure Flutter + Custom Backend architecture (v3.0+)
+- **NetworkClient** - HTTP client abstraction (Dio, http, or custom) (v3.1+)
+- **Request Logging** - HTTP request/response logging with `RequestLogger` (v3.2+)
+- **Metrics Collection** - Payment operation metrics with `PaymentMetrics` (v3.2+)
 - **Type Safe** - Full Dart null safety support
 - **Secure** - Automatic sensitive data masking with LogSanitizer
 - **Testable** - Built-in MockPaymentProvider for unit testing
 - **Cross Platform** - Works on iOS, Android, Web, and Desktop
 - **Saved Cards** - Card tokenization support (iyzico, Sipay)
+- **Client Validation** - CardValidator and RequestValidator for client-side validation
+- **Example App** - Complete Flutter app demonstrating all features (v3.2+)
+
+## Usage Modes
+
+TR Payment Hub supports two usage modes:
+
+### Proxy Mode (Recommended for Flutter Apps)
+
+Use this mode when your backend is written in **any language** (Node.js, Python, Go, PHP, etc.).
+API credentials stay secure on your backend - never exposed in the Flutter app.
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+// Create proxy provider (no credentials needed!)
+final provider = TrPaymentHub.createProxy(
+  baseUrl: 'https://api.yourbackend.com/payment',
+  provider: ProviderType.iyzico,
+  authToken: 'user_jwt_token', // Optional
+);
+
+await provider.initializeWithProvider(ProviderType.iyzico);
+
+// Payment request goes to YOUR backend
+final result = await provider.createPayment(request);
+```
+
+**Benefits:**
+- API keys stay on your secure backend
+- Backend can be any language
+- Unified Flutter code regardless of provider
+- Client-side validation before sending
+
+### Direct Mode (Dart Backend Only)
+
+Use this mode only when your backend is written in **Dart** (serverpod, dart_frog, shelf).
+Credentials are passed during initialization.
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub.dart';
+
+final provider = TrPaymentHub.create(ProviderType.iyzico);
+await provider.initialize(IyzicoConfig(
+  apiKey: 'xxx',
+  secretKey: 'xxx',
+  merchantId: 'xxx',
+));
+```
+
+## Client-Side Validation
+
+Validate card information before sending to backend:
+
+```dart
+import 'package:tr_payment_hub/tr_payment_hub_client.dart';
+
+final validation = CardValidator.validate(
+  cardNumber: '5528790000000008',
+  expireMonth: '12',
+  expireYear: '2030',
+  cvv: '123',
+  holderName: 'Ahmet Yilmaz',
+);
+
+if (!validation.isValid) {
+  print(validation.errors); // {'cardNumber': 'Invalid card number'}
+  return;
+}
+
+print('Card brand: ${validation.cardBrand.displayName}'); // Mastercard
+
+// Now safe to send to backend
+await provider.createPayment(request);
+```
 
 ## Installation
 
@@ -33,7 +112,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tr_payment_hub: ^2.0.1
+  tr_payment_hub: ^3.2.0
 ```
 
 Then run:
@@ -163,17 +242,28 @@ final threeDSResult = await provider.init3DSPayment(
   request.copyWith(callbackUrl: 'https://yoursite.com/3ds-callback'),
 );
 
-if (threeDSResult.needsWebView) {
-  // Step 2: Display in WebView
-  // iyzico: Use threeDSResult.htmlContent
-  // PayTR/Sipay: Redirect to threeDSResult.redirectUrl
-}
+// Step 2: Show built-in PaymentWebView (v3.1+)
+final webViewResult = await PaymentWebView.show(
+  context: context,
+  threeDSResult: threeDSResult,
+  callbackUrl: 'https://yoursite.com/3ds-callback',
+  theme: PaymentWebViewTheme(
+    appBarTitle: '3D Secure',
+    loadingText: 'Loading bank page...',
+  ),
+);
 
 // Step 3: Complete after callback
-final result = await provider.complete3DSPayment(
-  threeDSResult.transactionId!,
-  callbackData: receivedCallbackData,
-);
+if (webViewResult.isSuccess) {
+  final result = await provider.complete3DSPayment(
+    threeDSResult.transactionId!,
+    callbackData: webViewResult.callbackData!,
+  );
+} else if (webViewResult.isCancelled) {
+  // User cancelled
+} else if (webViewResult.isTimeout) {
+  // Timed out
+}
 ```
 
 ### 5. Query Installments
@@ -335,6 +425,125 @@ if (issues.isNotEmpty) {
   print('Warning: $issues');
 }
 config.assertProduction(); // Throws if sandbox mode
+```
+
+## v3.2 Features
+
+### Complete Example App
+The `example/` folder now contains a production-ready Flutter app demonstrating all features:
+
+```bash
+cd example
+flutter pub get
+flutter run
+```
+
+**Features:**
+- Payment processing with 3DS support
+- Installment queries
+- Saved cards management
+- Refund processing
+- Transaction status lookup
+- HTTP request/response logs
+- Direct Mode & Proxy Mode support
+- Light/Dark theme
+
+### Request Logging
+Track all HTTP requests and responses:
+
+```dart
+final logger = RequestLogger(
+  config: RequestLoggerConfig.full,
+  onLog: (entry) => print('${entry.method} ${entry.url} - ${entry.statusCode}'),
+);
+
+final provider = IyzicoProvider(
+  networkClient: HttpNetworkClient(requestLogger: logger),
+);
+```
+
+### Metrics Collection
+Monitor payment operations:
+
+```dart
+final metrics = InMemoryMetricsCollector();
+final provider = IyzicoProvider(metricsCollector: metrics);
+
+// After operations
+print('Total payments: ${metrics.getMetricCount("payment")}');
+print('Success rate: ${metrics.getSuccessRate("payment")}%');
+```
+
+### Backend Example (Node.js)
+Ready-to-use Express.js backend for Proxy Mode:
+
+```bash
+cd example/backend
+cp .env.example .env  # Add your API keys
+npm install && npm start
+```
+
+## v3.1 Features
+
+### PaymentWebView Widget
+Built-in 3DS WebView for Flutter apps - no more custom WebView code needed:
+
+```dart
+// Show 3DS in full-screen modal
+final result = await PaymentWebView.show(
+  context: context,
+  threeDSResult: threeDSResult,
+  callbackUrl: 'https://yoursite.com/callback',
+  theme: PaymentWebViewTheme(
+    appBarTitle: '3D Secure Verification',
+    loadingText: 'Loading bank page...',
+    progressColor: Colors.blue,
+  ),
+  timeout: Duration(minutes: 5),
+);
+
+// Or show as bottom sheet
+final result = await PaymentWebView.showBottomSheet(...);
+
+// Handle result
+if (result.isSuccess) {
+  // Complete payment with result.callbackData
+} else if (result.isCancelled) {
+  // User closed the WebView
+} else if (result.isTimeout) {
+  // Exceeded timeout
+}
+```
+
+### NetworkClient Interface
+HTTP client abstraction for using Dio or custom implementations:
+
+```dart
+// Default: Uses http package
+final provider = IyzicoProvider();
+
+// Custom: Use Dio (implement NetworkClient)
+class DioNetworkClient implements NetworkClient {
+  final Dio _dio = Dio();
+
+  @override
+  Future<NetworkResponse> post(String url, {
+    Map<String, String>? headers,
+    dynamic body,
+    Duration? timeout,
+  }) async {
+    final response = await _dio.post(url, data: body);
+    return NetworkResponse(
+      statusCode: response.statusCode ?? 500,
+      body: response.data.toString(),
+      headers: response.headers.map.map((k, v) => MapEntry(k, v.join(','))),
+    );
+  }
+  // ... implement other methods
+}
+
+// Use with any provider
+final provider = IyzicoProvider(networkClient: DioNetworkClient());
 ```
 
 ## v2.0 Features

@@ -1,0 +1,24 @@
+{
+  "name": "tr-payment-hub-backend",
+  "version": "1.0.0",
+  "description": "Express backend for tr_payment_hub Flutter proxy mode",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "iyzipay": "^2.1.0",
+    "dotenv": "^16.3.1",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "joi": "^17.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
